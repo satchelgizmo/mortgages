@@ -532,23 +532,12 @@ body {
             </div>
             <div class="fg fg2">
               <div class="f">
-                <label>Source</label>
-                <select id="e-source" oninput="ge()">
-                  <option value="qualify">Qualify &amp; quote</option>
-                  <option value="0">Option A</option>
-                  <option value="1">Option B</option>
-                </select>
-              </div>
-              <div class="f">
                 <label>Email type</label>
                 <select id="e-type" oninput="ge()">
                   <option value="initial">Initial response</option>
-                  <option value="compete">Rate match / competitor</option>
-                  <option value="lock">Lock recommendation</option>
+                  <option value="compare">Option comparison</option>
                 </select>
               </div>
-            </div>
-            <div class="fg">
               <div class="f"><label>Your name</label><input type="text" id="e-agent" value="Nick" oninput="ge()"></div>
             </div>
             <div class="e-summary" id="e-summary"></div>
@@ -735,7 +724,6 @@ function setOpts(n) {
   numOpts = n;
   document.getElementById('ct2').classList.toggle('on', n === 2);
   document.getElementById('ct3').classList.toggle('on', n === 3);
-  updateEmailSourceOpts();
   buildOptInputs();
   buildComparison();
 }
@@ -870,81 +858,51 @@ function _doBuildComparison() {
 }
 
 // ── Email generator ────────────────────────────────────────────────────
-function updateEmailSourceOpts() {
-  const sel = document.getElementById('e-source');
-  if (!sel) return;
-  const hasC = !!sel.querySelector('option[value="2"]');
-  if (numOpts >= 3 && !hasC) {
-    sel.insertAdjacentHTML('beforeend', '<option value="2">Option C</option>');
-  } else if (numOpts < 3 && hasC) {
-    sel.querySelector('option[value="2"]').remove();
-    if (sel.value === '2') sel.value = 'qualify';
-  }
-}
-
 function ge() {
-  const name   = document.getElementById('e-name').value  || 'Client';
-  const agent  = document.getElementById('e-agent').value || 'Nick';
-  const date   = document.getElementById('e-date').value  || '2024';
-  const type   = document.getElementById('e-type').value;
-  const source = document.getElementById('e-source').value;
+  const name  = document.getElementById('e-name').value  || 'Client';
+  const agent = document.getElementById('e-agent').value || 'Nick';
+  const date  = document.getElementById('e-date').value  || '2024';
+  const type  = document.getElementById('e-type').value;
 
-  // Current loan always comes from qualify tab
+  // Current loan always from qualify tab
   const ol  = gv('q-ol');
   const or_ = gv('q-or');
   const bal = gv('q-bal');
   const ov  = gv('q-ov');
   const nv  = gv('q-nv');
-
-  // New loan details come from the selected source
-  let nl, nr, term, lc, cc, esc, payoff;
-  if (source === 'qualify') {
-    nl     = gv('q-nl');
-    nr     = gv('q-nr');
-    term   = gv('q-term') || 360;
-    lc     = gv('q-lc');
-    cc     = gv('q-cc');
-    esc    = gv('q-esc');
-    payoff = bal;
-  } else {
-    const i = parseInt(source);
-    nl     = ogv(i, 'l');
-    nr     = ogv(i, 'r');
-    term   = ogv(i, 't') || 360;
-    lc     = ogv(i, 'lc');
-    cc     = ogv(i, 'cc');
-    esc    = ogv(i, 'esc');
-    payoff = ogv(i, 'po');
-  }
-
   const oldPINum = pmt(or_, 360, ol);
-  const newPINum = pmt(nr, term, nl);
-  const savNum   = oldPINum - newPINum;
   const oldPI    = oldPINum.toFixed(2);
-  const newPI    = newPINum.toFixed(2);
-  const sav      = savNum.toFixed(2);
-  const annSav   = Math.round(savNum * 12).toLocaleString();
-  const ltv      = Math.round((nl / nv) * 100);
-  const cashDue  = payoff + cc + esc - nl - lc;
-  const cashAmt  = Math.abs(cashDue);
-  const cashLabel = cashDue <= 0 ? fm(cashAmt) + ' back' : fm(cashAmt) + ' due';
-  const cashColor = cashDue <= 0 ? '#059669' : cashDue < 5000 ? '#D97706' : '#DC2626';
-  const netCash   = Math.round(cc + esc - lc);
-
-  // Update summary widget
-  document.getElementById('e-summary').innerHTML =
-    '<div class="e-sum-header">Key numbers for this email</div>' +
-    '<div class="e-sum-grid">' +
-    '<div class="e-sum-item"><span class="e-sum-lbl">Rate</span><span class="e-sum-val">' + nr + '%</span></div>' +
-    '<div class="e-sum-item"><span class="e-sum-lbl">Monthly P&amp;I</span><span class="e-sum-val">$' + newPI + '</span></div>' +
-    '<div class="e-sum-item"><span class="e-sum-lbl">Monthly savings</span><span class="e-sum-val ok">$' + sav + '</span></div>' +
-    '<div class="e-sum-item"><span class="e-sum-lbl">New LTV</span><span class="e-sum-val">' + ltv + '%</span></div>' +
-    '<div class="e-sum-item"><span class="e-sum-lbl">Lender credit</span><span class="e-sum-val">' + (lc > 0 ? fm(lc) : '—') + '</span></div>' +
-    '<div class="e-sum-item"><span class="e-sum-lbl">Cash at closing</span><span class="e-sum-val" style="color:' + cashColor + '">' + cashLabel + '</span></div>' +
-    '</div>';
 
   let email = '';
+
   if (type === 'initial') {
+    // ── Initial response: uses Qualify tab ──────────────────────────
+    const nl   = gv('q-nl'),  nr   = gv('q-nr');
+    const term = gv('q-term') || 360;
+    const lc   = gv('q-lc'),  cc   = gv('q-cc'), esc = gv('q-esc');
+    const newPINum = pmt(nr, term, nl);
+    const savNum   = oldPINum - newPINum;
+    const newPI    = newPINum.toFixed(2);
+    const sav      = savNum.toFixed(2);
+    const annSav   = Math.round(savNum * 12).toLocaleString();
+    const ltv      = Math.round((nl / nv) * 100);
+    const cashDue  = bal + cc + esc - nl - lc;
+    const cashAmt  = Math.abs(cashDue);
+    const cashLabel = cashDue <= 0 ? fm(cashAmt) + ' back' : fm(cashAmt) + ' due';
+    const cashColor = cashDue <= 0 ? '#059669' : cashDue < 5000 ? '#D97706' : '#DC2626';
+    const netCash   = Math.round(cc + esc - lc);
+
+    document.getElementById('e-summary').innerHTML =
+      '<div class="e-sum-header">Key numbers for this email</div>' +
+      '<div class="e-sum-grid">' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Rate</span><span class="e-sum-val">' + nr + '%</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Monthly P&amp;I</span><span class="e-sum-val">$' + newPI + '</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Monthly savings</span><span class="e-sum-val ok">$' + sav + '</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">New LTV</span><span class="e-sum-val">' + ltv + '%</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Lender credit</span><span class="e-sum-val">' + (lc > 0 ? fm(lc) : '—') + '</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Cash at closing</span><span class="e-sum-val" style="color:' + cashColor + '">' + cashLabel + '</span></div>' +
+      '</div>';
+
     email =
       'Hi ' + name + ',\n\n' +
       'Great to hear from you — there\'s a real opportunity here right now.\n\n' +
@@ -971,29 +929,89 @@ function ge() {
       '— Permission to pull your credit\n\n' +
       'I\'ll have your application and disclosures over the same day. Any questions, just ask.\n\n' +
       'Thanks,\n' + agent;
-  } else if (type === 'compete') {
-    email =
-      'Hi ' + name + ',\n\n' +
-      'Absolutely — we can match that for you. Happy to offer ' + nr + '% with no points and $0 due at closing.\n\n' +
-      'Here\'s the quick comparison:\n\n' +
-      '  ' + nr + '% with ' + fm(lc) + ' lender credit: cash in your pocket on day one, payment $' + newPI + '/mo\n' +
-      '  ' + nr + '% no credit: same rate, same payment, no day-one benefit\n\n' +
-      'The credit puts real money in your hands immediately. The no-credit version only wins if you never ' +
-      'refinance again — which is unlikely given where rates are heading. Breakeven is well beyond a typical refi cycle.\n\n' +
-      'Ready to lock? Just say the word and we\'ll handle the paperwork today.\n\n' +
-      'Thanks,\n' + agent;
+
   } else {
+    // ── Option comparison: uses Option Builder ───────────────────────
+    const opts = [];
+    for (let i = 0; i < numOpts; i++) {
+      const o = {
+        label:  optLabels[i],
+        rate:   ogv(i, 'r'),
+        term:   ogv(i, 't') || 360,
+        loan:   ogv(i, 'l'),
+        lc:     ogv(i, 'lc'),
+        cc:     ogv(i, 'cc'),
+        esc:    ogv(i, 'esc'),
+        payoff: ogv(i, 'po')
+      };
+      o.pi      = pmt(o.rate, o.term, o.loan);
+      o.cashDue = o.payoff + o.cc + o.esc - o.loan - o.lc;
+      opts.push(o);
+    }
+
+    // Summary widget: one row per option
+    let sumRows = '';
+    opts.forEach(o => {
+      const cd = Math.abs(o.cashDue);
+      const cl = o.cashDue <= 0 ? fm(cd) + ' back' : fm(cd) + ' due';
+      const cc2 = o.cashDue <= 0 ? '#059669' : o.cashDue < 5000 ? '#D97706' : '#DC2626';
+      sumRows +=
+        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' rate</span><span class="e-sum-val">' + o.rate + '%</span></div>' +
+        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' P&amp;I</span><span class="e-sum-val">$' + o.pi.toFixed(2) + '</span></div>' +
+        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' credit</span><span class="e-sum-val">' + (o.lc > 0 ? fm(o.lc) : '—') + '</span></div>' +
+        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' cash</span><span class="e-sum-val" style="color:' + cc2 + '">' + cl + '</span></div>';
+    });
+    document.getElementById('e-summary').innerHTML =
+      '<div class="e-sum-header">Options at a glance</div>' +
+      '<div class="e-sum-grid">' + sumRows + '</div>';
+
+    // Build option blocks for email
+    let optBlocks = '';
+    opts.forEach(o => {
+      const cd  = Math.abs(o.cashDue);
+      const cl  = o.cashDue <= 0 ? fm(cd) + ' back at closing' : fm(cd) + ' due at closing';
+      optBlocks += o.label + ' — ' + o.rate + '%\n' +
+        '  Payment:        $' + o.pi.toFixed(2) + '/month P&I\n' +
+        '  Loan amount:    ' + fm(o.loan) + '\n' +
+        (o.lc > 0
+          ? '  Lender credit:  ' + fm(o.lc) + ' (applied toward closing costs)\n'
+          : '  Lender credit:  none\n') +
+        '  Cash at closing: ' + cl + '\n\n';
+    });
+
+    // Savings vs current for the lowest-rate option
+    const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
+    const savNum  = oldPINum - bestPmt.pi;
+    const annSav  = Math.round(savNum * 12).toLocaleString();
+
+    // Breakeven insight if a lender-credit option exists alongside a lower-payment one
+    const bestLc = opts.reduce((a, b) => a.lc > b.lc ? a : b);
+    let insight = '';
+    if (bestLc.lc > 0 && bestLc !== bestPmt) {
+      const diff = bestPmt.pi - bestLc.pi;
+      const be   = diff > 0 ? Math.round(bestLc.lc / diff) : null;
+      insight =
+        'A note on the tradeoff: ' + bestLc.label + ' puts ' + fm(bestLc.lc) +
+        ' in your pocket on day one through the lender credit. ' +
+        bestPmt.label + '\'s lower rate saves an extra $' + diff.toFixed(2) + '/month, ' +
+        'but you wouldn\'t break even on that difference for ' +
+        (be ? be + ' months (' + (be / 12).toFixed(1) + ' years)' : 'a long time') +
+        ' — well beyond the typical refinance horizon. Most borrowers are better served by the immediate cash.\n\n';
+    }
+
     email =
       'Hi ' + name + ',\n\n' +
-      'Market conditions are favorable right now and I recommend locking in your rate today.\n\n' +
-      'We can lock at ' + nr + '%' +
-      (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit' : '') +
-      ' for a 15-day window — more than enough time to close. Your new P&I payment would be $' +
-      newPI + '/month, saving $' + sav + '/month ($' + annSav + '/year).\n\n' +
-      'We\'ve seen significant improvement since we started. Locking now protects those gains. ' +
-      'Just reply confirming you\'d like to proceed and we\'ll lock today.\n\n' +
+      'Here\'s a side-by-side breakdown of the ' + numOpts + ' options we put together based on today\'s rates.\n\n' +
+      'Your current loan: ' + or_ + '% — $' + oldPI + '/month P&I. ' +
+      'Even the highest rate below saves you $' + savNum.toFixed(2) + '/month ($' + annSav + '/year).\n\n' +
+      optBlocks +
+      insight +
+      'All three options carry the same escrow setup at closing — that\'s your own money going into your new escrow account, ' +
+      'not a fee. Your existing escrow balance comes back to you within 20 days of payoff.\n\n' +
+      'Happy to walk through any of these in detail. Just let me know which direction feels right and we\'ll get moving.\n\n' +
       'Thanks,\n' + agent;
   }
+
   document.getElementById('emailout').innerText = email;
 }
 
@@ -1008,7 +1026,6 @@ function copyEmail(event) {
 
 // ── Init ───────────────────────────────────────────────────────────────
 cq();
-updateEmailSourceOpts();
 buildOptInputs();
 _doBuildComparison();  // call directly on init (no debounce needed)
 </script>
