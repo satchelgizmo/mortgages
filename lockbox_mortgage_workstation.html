@@ -1,142 +1,396 @@
-
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lockbox — Mortgage Workflow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
-*{box-sizing:border-box;margin:0;padding:0}
+/* ── Reset & base ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── App shell ─────────────────────────────────────────────────────── */
-.app{font-family:var(--font-sans);max-width:1040px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);overflow:hidden;display:flex;flex-direction:column}
+:root {
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
+  /* Text */
+  --c-text:   #0F172A;
+  --c-text2:  #334155;
+  --c-text3:  #64748B;
+
+  /* Backgrounds */
+  --c-bg:     #FFFFFF;
+  --c-bg2:    #F8FAFC;
+  --c-bg3:    #F1F5F9;
+
+  /* Borders */
+  --c-border:  #CBD5E1;
+  --c-border2: #E2E8F0;
+  --c-border3: #F1F5F9;
+
+  /* Accent (blue) */
+  --c-accent:  #2563EB;
+  --c-acc-bg:  #EFF6FF;
+  --c-acc-txt: #1D4ED8;
+  --c-acc-brd: #BFDBFE;
+
+  /* Status */
+  --c-ok:      #059669;
+  --c-ok-bg:   #ECFDF5;
+  --c-warn:    #D97706;
+  --c-bad:     #DC2626;
+
+  /* Radii */
+  --r-lg: 10px;
+  --r-md:  6px;
+}
+
+html, body {
+  font-family: var(--font);
+  background: #DCE4EE;
+  min-height: 100vh;
+  color: var(--c-text);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 16px 48px;
+}
+
+/* ── App shell ──────────────────────────────────────────────────────── */
+.app {
+  width: 100%;
+  max-width: 1060px;
+  background: var(--c-bg);
+  border-radius: var(--r-lg);
+  border: 1px solid var(--c-border2);
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,.08), 0 2px 4px -2px rgba(0,0,0,.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
 
 /* Titlebar */
-.app-titlebar{display:flex;align-items:center;gap:8px;padding:0 14px;height:34px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
-.app-icon{font-size:13px;opacity:.6}
-.app-name{font-size:13px;font-weight:600;color:var(--color-text-primary);letter-spacing:-0.02em}
-.app-desc{font-size:11px;color:var(--color-text-tertiary);padding-left:6px;border-left:0.5px solid var(--color-border-secondary)}
-.titlebar-spacer{flex:1}
-.app-pill{font-size:10px;padding:2px 8px;border-radius:99px;background:var(--color-background-tertiary);color:var(--color-text-tertiary);border:0.5px solid var(--color-border-tertiary);font-weight:500;letter-spacing:0.02em}
+.app-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  height: 44px;
+  background: #1E293B;
+  flex-shrink: 0;
+}
+.app-icon  { font-size: 15px; color: #94A3B8; }
+.app-name  { font-size: 14px; font-weight: 700; color: #F1F5F9; letter-spacing: -0.02em; }
+.app-desc  { font-size: 12px; color: #94A3B8; padding-left: 10px; border-left: 1px solid #334155; }
+.titlebar-spacer { flex: 1; }
+.app-pill  {
+  font-size: 11px; padding: 3px 10px; border-radius: 99px;
+  background: rgba(255,255,255,.08); color: #94A3B8;
+  border: 1px solid rgba(255,255,255,.1); font-weight: 500;
+}
 
 /* Tab bar */
-.app-tabs{display:flex;align-items:stretch;padding:0 14px;background:var(--color-background-secondary);border-bottom:1px solid var(--color-border-tertiary);flex-shrink:0;gap:0}
-.tab{padding:0 16px;height:34px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--color-text-tertiary);border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;letter-spacing:0.01em}
-.tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary)}
-.tab:hover:not(.active){color:var(--color-text-secondary)}
-.tab-icon{font-size:11px;opacity:.7}
+.app-tabs {
+  display: flex;
+  align-items: stretch;
+  padding: 0 16px;
+  background: var(--c-bg2);
+  border-bottom: 1px solid var(--c-border2);
+  flex-shrink: 0;
+}
+.tab {
+  padding: 0 18px;
+  height: 40px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: var(--c-text3);
+  border-bottom: 2px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  font-family: var(--font);
+  transition: color .12s;
+}
+.tab.active { color: var(--c-text); border-bottom-color: var(--c-accent); background: var(--c-bg); }
+.tab:hover:not(.active) { color: var(--c-text2); }
+.tab-icon { font-size: 12px; }
 
-/* Main scrollable area */
-.app-body{padding:16px;overflow-y:auto;flex:1}
-.panel{display:none}.panel.active{display:block}
+/* Main content */
+.app-body { padding: 16px; overflow-y: auto; flex: 1; }
+.panel { display: none; }
+.panel.active { display: block; }
 
 /* Status bar */
-.app-statusbar{display:flex;align-items:center;gap:0;padding:0;height:26px;background:var(--color-background-secondary);border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0;font-size:11px;overflow:hidden}
-.sb-item{display:flex;align-items:center;gap:5px;padding:0 12px;height:100%;color:var(--color-text-tertiary);border-right:0.5px solid var(--color-border-tertiary);white-space:nowrap}
-.sb-item:first-child{border-left:none}
-.sb-dot{width:6px;height:6px;border-radius:50%;background:#1D9E75;flex-shrink:0}
-.sb-label{color:var(--color-text-tertiary)}
-.sb-val{color:var(--color-text-secondary);font-weight:500}
-.sb-val.ok{color:#0F6E56}
-.sb-spacer{flex:1}
-
-/* ── Typography helpers ─────────────────────────────────────────────── */
-.sec-label{font-size:10px;font-weight:600;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:8px}
+.app-statusbar {
+  display: flex;
+  align-items: center;
+  height: 28px;
+  background: var(--c-bg2);
+  border-top: 1px solid var(--c-border2);
+  flex-shrink: 0;
+  font-size: 11.5px;
+  overflow: hidden;
+}
+.sb-item {
+  display: flex; align-items: center; gap: 5px;
+  padding: 0 14px; height: 100%;
+  border-right: 1px solid var(--c-border2); white-space: nowrap;
+}
+.sb-dot    { width: 7px; height: 7px; border-radius: 50%; background: var(--c-ok); flex-shrink: 0; }
+.sb-label  { color: var(--c-text3); }
+.sb-val    { color: var(--c-text2); font-weight: 600; }
+.sb-val.ok { color: var(--c-ok); }
+.sb-spacer { flex: 1; }
 
 /* ── Cards ──────────────────────────────────────────────────────────── */
-.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:10px}
-.card:last-child{margin-bottom:0}
-.card-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
-.card-title{font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.08em}
-.card-body{padding:12px}
+.card {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.card:last-child { margin-bottom: 0; }
+.card-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 14px;
+  background: var(--c-bg2);
+  border-bottom: 1px solid var(--c-border2);
+}
+.card-title { font-size: 11px; font-weight: 600; color: var(--c-text3); text-transform: uppercase; letter-spacing: 0.07em; }
+.card-body  { padding: 14px; }
 
 /* ── Form fields ────────────────────────────────────────────────────── */
-.fg{display:grid;gap:8px;margin-bottom:8px}
-.fg:last-child{margin-bottom:0}
-.fg2{grid-template-columns:1fr 1fr}
-.fg3{grid-template-columns:1fr 1fr 1fr}
-.fg4{grid-template-columns:repeat(4,1fr)}
-.f{display:flex;flex-direction:column;gap:3px}
-.f label{font-size:10px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:0.04em;text-transform:uppercase}
-.f input,.f select{font-size:13px;padding:6px 8px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);width:100%;font-family:inherit;font-variant-numeric:tabular-nums}
-.f input:focus,.f select:focus{outline:none;border-color:var(--color-border-info);background:var(--color-background-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--color-border-info) 15%,transparent)}
-.f select{cursor:pointer}
+.fg { display: grid; gap: 10px; margin-bottom: 10px; }
+.fg:last-child { margin-bottom: 0; }
+.fg2 { grid-template-columns: 1fr 1fr; }
+.fg3 { grid-template-columns: 1fr 1fr 1fr; }
+.f { display: flex; flex-direction: column; gap: 4px; }
+.f label { font-size: 11.5px; font-weight: 500; color: var(--c-text3); }
+.f input, .f select {
+  font-size: 14px;
+  padding: 7px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--c-border);
+  background: var(--c-bg);
+  color: var(--c-text);
+  width: 100%;
+  font-family: var(--font);
+  font-variant-numeric: tabular-nums;
+  transition: border-color .12s, box-shadow .12s;
+}
+.f input:focus, .f select:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.14);
+}
+.f select { cursor: pointer; }
 
-/* ── Metrics ────────────────────────────────────────────────────────── */
-.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
-.mcard{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px}
-.ml{font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
-.mv{font-size:18px;font-weight:600;color:var(--color-text-primary);font-variant-numeric:tabular-nums;line-height:1.1}
-.ms{font-size:11px;color:var(--color-text-tertiary);margin-top:3px;font-variant-numeric:tabular-nums}
-.mv.ok{color:#0F6E56}.mv.warn{color:#854F0B}.mv.bad{color:#A32D2D}
+/* ── Metric cards ───────────────────────────────────────────────────── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.mcard {
+  background: var(--c-bg2);
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+}
+.ml { font-size: 11px; font-weight: 500; color: var(--c-text3); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 5px; }
+.mv { font-size: 20px; font-weight: 700; color: var(--c-text); font-variant-numeric: tabular-nums; line-height: 1.1; }
+.ms { font-size: 11.5px; color: var(--c-text3); margin-top: 4px; font-variant-numeric: tabular-nums; }
+.mv.ok   { color: var(--c-ok); }
+.mv.warn { color: var(--c-warn); }
+.mv.bad  { color: var(--c-bad); }
 
-/* ── Data table (LTV/cash) ──────────────────────────────────────────── */
-.dt{width:100%;font-size:12px;border-collapse:collapse}
-.dt td{padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);vertical-align:middle}
-.dt td:last-child{text-align:right;color:var(--color-text-primary);font-variant-numeric:tabular-nums}
-.dt tr:last-child td{border-bottom:none;font-weight:600;font-size:13px}
-.dt .cr{color:#0F6E56}
+/* ── Data table (LTV / cash panels) ────────────────────────────────── */
+.dt { width: 100%; font-size: 13px; border-collapse: collapse; }
+.dt td { padding: 6px 0; border-bottom: 1px solid var(--c-border3); color: var(--c-text3); vertical-align: middle; }
+.dt td:last-child { text-align: right; color: var(--c-text); font-variant-numeric: tabular-nums; font-weight: 500; }
+.dt tr:last-child td { border-bottom: none; font-weight: 700; font-size: 14px; }
+.dt .cr { color: var(--c-ok) !important; }
 
-/* LTV bar */
-.ltvbar{height:4px;border-radius:2px;background:var(--color-border-tertiary);margin:8px 0 3px;overflow:hidden}
-.ltvfill{height:100%;border-radius:2px;transition:width .3s ease}
+/* LTV progress bar */
+.ltvbar { height: 6px; border-radius: 3px; background: var(--c-border3); margin: 10px 0 5px; overflow: hidden; }
+.ltvfill { height: 100%; border-radius: 3px; transition: width .35s ease; }
+.ltv-hint { font-size: 11.5px; color: var(--c-text3); }
 
 /* ── Insight ────────────────────────────────────────────────────────── */
-.insight{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-left:2px solid var(--color-border-info);border-radius:var(--border-radius-md);padding:10px 12px;font-size:12px;line-height:1.65;color:var(--color-text-secondary);margin-top:10px}
-.insight b{color:var(--color-text-primary);font-weight:600}
+.insight {
+  background: var(--c-acc-bg);
+  border: 1px solid var(--c-acc-brd);
+  border-left: 3px solid var(--c-accent);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--c-text2);
+  margin-top: 12px;
+}
+.insight b { color: var(--c-text); font-weight: 700; }
 
-/* ── Qualify layout: split ──────────────────────────────────────────── */
-.qualify-layout{display:grid;grid-template-columns:1fr 1.45fr;gap:10px;align-items:start}
-.qualify-results-inner{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+/* ── Qualify split layout ───────────────────────────────────────────── */
+.qualify-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; align-items: start; }
+.qualify-results-inner { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
 
-/* ── Toolbar (Option Builder) ───────────────────────────────────────── */
-.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.toolbar-spacer{flex:1}
-.segment{display:inline-flex;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:2px;gap:2px}
-.seg-btn{padding:4px 14px;font-size:12px;font-weight:500;border:none;background:none;border-radius:calc(var(--border-radius-md) - 2px);cursor:pointer;color:var(--color-text-secondary);font-family:inherit}
-.seg-btn.on{background:var(--color-background-primary);color:var(--color-text-primary);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.toolbar-label{font-size:11px;color:var(--color-text-tertiary)}
+/* ── Option builder toolbar ─────────────────────────────────────────── */
+.toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.toolbar-spacer { flex: 1; }
+.toolbar-label { font-size: 12px; font-weight: 500; color: var(--c-text3); }
+.segment {
+  display: inline-flex;
+  background: var(--c-bg2);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 2px; gap: 2px;
+}
+.seg-btn {
+  padding: 5px 18px; font-size: 13px; font-weight: 500;
+  border: none; background: none;
+  border-radius: calc(var(--r-md) - 2px);
+  cursor: pointer; color: var(--c-text3);
+  font-family: var(--font); transition: background .1s;
+}
+.seg-btn.on {
+  background: var(--c-bg); color: var(--c-text);
+  box-shadow: 0 1px 3px rgba(0,0,0,.1);
+}
 
 /* ── Option cards ───────────────────────────────────────────────────── */
-.opt-grid{display:grid;gap:10px;margin-bottom:12px}
-.opt2{grid-template-columns:repeat(2,1fr)}
-.opt3{grid-template-columns:repeat(3,1fr)}
-.ocard{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
-.ocard.rec{border-color:var(--color-border-info);border-width:1px}
-.ocard-head{padding:8px 12px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between}
-.otitle{font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.08em}
-.rbadge{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--color-background-info);color:var(--color-text-info);font-weight:500}
-.ocard-body{padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.opt-grid { display: grid; gap: 12px; margin-bottom: 14px; }
+.opt2 { grid-template-columns: repeat(2, 1fr); }
+.opt3 { grid-template-columns: repeat(3, 1fr); }
+.ocard {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.ocard.rec { border: 2px solid var(--c-accent); }
+.ocard-head {
+  padding: 9px 14px; background: var(--c-bg2);
+  border-bottom: 1px solid var(--c-border2);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.otitle { font-size: 11px; font-weight: 700; color: var(--c-text2); text-transform: uppercase; letter-spacing: 0.07em; }
+.rbadge {
+  font-size: 10px; padding: 2px 8px; border-radius: 99px;
+  background: var(--c-acc-bg); color: var(--c-acc-txt);
+  font-weight: 600; border: 1px solid var(--c-acc-brd);
+}
+.ocard-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 
 /* ── Comparison table ───────────────────────────────────────────────── */
-.cmp-wrap{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:10px}
-.cmp-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
-.cmp-table th{font-size:10px;font-weight:600;color:var(--color-text-secondary);padding:7px 12px;text-align:left;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);text-transform:uppercase;letter-spacing:0.07em}
-.cmp-table th.r{text-align:right}
-.cmp-table td{padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle;font-variant-numeric:tabular-nums}
-.cmp-table td.r{text-align:right;color:var(--color-text-secondary)}
-.cmp-table td.win{text-align:right;color:#0F6E56;font-weight:600}
-.cmp-table td.lose{text-align:right;color:var(--color-text-tertiary)}
-.cmp-table tr.gh td{font-size:10px;font-weight:600;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.08em;background:var(--color-background-secondary);padding:5px 12px}
-.cmp-table tr:last-child td{border-bottom:none}
-.cmp-table tbody tr:hover td{background:var(--color-background-secondary)}
+.cmp-wrap {
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-lg);
+  overflow: hidden; margin-bottom: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.cmp-table { width: 100%; border-collapse: collapse; font-size: 13px; table-layout: fixed; }
+.cmp-table th {
+  font-size: 11px; font-weight: 600; color: var(--c-text3);
+  padding: 9px 14px; text-align: left;
+  border-bottom: 1px solid var(--c-border2);
+  background: var(--c-bg2);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.cmp-table th.r { text-align: right; }
+.cmp-table td {
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--c-border3);
+  color: var(--c-text); vertical-align: middle;
+  font-variant-numeric: tabular-nums;
+}
+.cmp-table td.lbl  { color: var(--c-text3); }
+.cmp-table td.r    { text-align: right; color: var(--c-text3); }
+.cmp-table td.win  { text-align: right; color: var(--c-ok); font-weight: 700; }
+.cmp-table td.lose { text-align: right; color: var(--c-text3); }
+.cmp-table tr:last-child td { border-bottom: none; }
+.cmp-table tbody tr:hover td { background: var(--c-bg2); }
 
-/* ── Email layout: split ────────────────────────────────────────────── */
-.email-layout{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;align-items:start}
-.email-preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
-.emailbox{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:14px;font-size:12.5px;line-height:1.75;color:var(--color-text-primary);white-space:pre-wrap;min-height:420px;font-family:inherit}
+/* ── Email split layout ─────────────────────────────────────────────── */
+.email-layout { display: grid; grid-template-columns: 1fr 1.6fr; gap: 12px; align-items: start; }
+.email-preview-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.email-hint { font-size: 12px; color: var(--c-text3); }
+.emailbox {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  padding: 16px;
+  font-size: 13.5px; line-height: 1.8;
+  color: var(--c-text); white-space: pre-wrap;
+  min-height: 440px; font-family: var(--font);
+  transition: border-color .12s, box-shadow .12s;
+}
+.emailbox:focus {
+  outline: none; border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px rgba(37,99,235,.14);
+}
 
 /* ── Buttons ────────────────────────────────────────────────────────── */
-.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:12px;font-weight:500;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-primary);font-family:inherit;transition:background .1s}
-.btn:hover{background:var(--color-background-tertiary)}
-.btn-sm{padding:3px 10px;font-size:11px}
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; font-size: 13px; font-weight: 500;
+  border: 1px solid var(--c-border); border-radius: var(--r-md);
+  cursor: pointer; background: var(--c-bg); color: var(--c-text);
+  font-family: var(--font);
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+  transition: background .1s;
+}
+.btn:hover { background: var(--c-bg2); }
+.btn-primary { background: var(--c-text); color: var(--c-bg); border-color: var(--c-text); }
+.btn-primary:hover { opacity: .87; }
 
 /* ── Checklist ──────────────────────────────────────────────────────── */
-.checklist-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;align-items:start}
-.step-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
-.step-row:last-child{border-bottom:none;padding-bottom:0}
-.snum{width:22px;height:22px;border-radius:50%;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--color-text-tertiary);flex-shrink:0;margin-top:1px}
-.sc h4{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:3px}
-.sc p{font-size:12px;color:var(--color-text-secondary);line-height:1.55}
-.chk{list-style:none}
-.chk li{display:flex;gap:8px;align-items:baseline;font-size:13px;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
-.chk li:last-child{border-bottom:none}
-.ck{color:#1D9E75;font-size:12px;flex-shrink:0;font-weight:700}
+.checklist-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; align-items: start; }
+.step-row {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 11px 0; border-bottom: 1px solid var(--c-border3);
+}
+.step-row:last-child { border-bottom: none; padding-bottom: 0; }
+.snum {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--c-bg3); border: 1px solid var(--c-border2);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700; color: var(--c-text3);
+  flex-shrink: 0; margin-top: 1px;
+}
+.sc h4 { font-size: 13.5px; font-weight: 600; color: var(--c-text); margin-bottom: 4px; }
+.sc p  { font-size: 12.5px; color: var(--c-text2); line-height: 1.6; }
+.chk { list-style: none; }
+.chk li {
+  display: flex; gap: 10px; align-items: baseline;
+  font-size: 13.5px; padding: 8px 0;
+  border-bottom: 1px solid var(--c-border3); color: var(--c-text);
+}
+.chk li:last-child { border-bottom: none; }
+.ck { color: var(--c-ok); font-size: 13px; flex-shrink: 0; font-weight: 700; }
+
+/* ── Responsive ─────────────────────────────────────────────────────── */
+@media (max-width: 720px) {
+  .qualify-layout, .email-layout, .checklist-layout { grid-template-columns: 1fr; }
+  .metrics-grid { grid-template-columns: repeat(2, 1fr); }
+  .qualify-results-inner { grid-template-columns: 1fr; }
+  .opt2, .opt3 { grid-template-columns: 1fr; }
+}
 </style>
+</head>
+<body>
 
 <div class="app">
 
@@ -160,7 +414,7 @@
   <!-- Body -->
   <div class="app-body">
 
-    <!-- ── QUALIFY ───────────────────────────────────────────────── -->
+    <!-- ── QUALIFY ───────────────────────────────────────────────────── -->
     <div class="panel active" id="panel-qualify">
       <div class="qualify-layout">
 
@@ -202,25 +456,31 @@
           </div>
         </div>
 
-        <!-- Right: results -->
+        <!-- Right: live results -->
         <div>
           <div class="metrics-grid" id="q-metrics"></div>
           <div class="qualify-results-inner">
-            <div class="card" style="margin-bottom:0"><div class="card-head"><span class="card-title">LTV</span></div><div class="card-body" id="q-ltv"></div></div>
-            <div class="card" style="margin-bottom:0"><div class="card-head"><span class="card-title">Cash to close</span></div><div class="card-body" id="q-cash"></div></div>
+            <div class="card" style="margin-bottom:0">
+              <div class="card-head"><span class="card-title">LTV</span></div>
+              <div class="card-body" id="q-ltv"></div>
+            </div>
+            <div class="card" style="margin-bottom:0">
+              <div class="card-head"><span class="card-title">Cash to close</span></div>
+              <div class="card-body" id="q-cash"></div>
+            </div>
           </div>
           <div class="insight" id="q-insight"></div>
         </div>
       </div>
     </div>
 
-    <!-- ── COMPARE ───────────────────────────────────────────────── -->
+    <!-- ── COMPARE ───────────────────────────────────────────────────── -->
     <div class="panel" id="panel-compare">
       <div class="toolbar">
         <span class="toolbar-label">Options</span>
         <div class="segment">
           <button class="seg-btn on" id="ct2" onclick="setOpts(2)">2</button>
-          <button class="seg-btn" id="ct3" onclick="setOpts(3)">3</button>
+          <button class="seg-btn"    id="ct3" onclick="setOpts(3)">3</button>
         </div>
         <div class="toolbar-spacer"></div>
       </div>
@@ -229,9 +489,10 @@
       <div class="insight" id="cmp-insight"></div>
     </div>
 
-    <!-- ── EMAIL ─────────────────────────────────────────────────── -->
+    <!-- ── EMAIL ─────────────────────────────────────────────────────── -->
     <div class="panel" id="panel-email">
       <div class="email-layout">
+
         <!-- Left: fields -->
         <div class="card" style="margin-bottom:0">
           <div class="card-head"><span class="card-title">Scenario inputs</span></div>
@@ -261,7 +522,8 @@
               <div class="f"><label>Escrows at closing ($)</label><input type="number" id="e-esc" value="6345" oninput="ge()"></div>
             </div>
             <div class="fg fg2">
-              <div class="f"><label>Email type</label>
+              <div class="f">
+                <label>Email type</label>
                 <select id="e-type" oninput="ge()">
                   <option value="initial">Initial response</option>
                   <option value="compete">Rate match / competitor</option>
@@ -273,20 +535,21 @@
           </div>
         </div>
 
-        <!-- Right: preview -->
+        <!-- Right: editable preview -->
         <div>
           <div class="email-preview-head">
-            <span style="font-size:11px;color:var(--color-text-tertiary)">Edit before sending</span>
-            <button class="btn btn-sm" onclick="copyEmail(event)">Copy email</button>
+            <span class="email-hint">Edit before sending</span>
+            <button class="btn btn-primary" onclick="copyEmail(event)">Copy email</button>
           </div>
           <div class="emailbox" id="emailout" contenteditable="true"></div>
         </div>
       </div>
     </div>
 
-    <!-- ── CHECKLIST ──────────────────────────────────────────────── -->
+    <!-- ── CHECKLIST ──────────────────────────────────────────────────── -->
     <div class="panel" id="panel-checklist">
       <div class="checklist-layout">
+
         <div class="card" style="margin-bottom:0">
           <div class="card-head"><span class="card-title">Lead to lock — sequence</span></div>
           <div class="card-body">
@@ -300,9 +563,10 @@
             <div class="step-row"><div class="snum">8</div><div class="sc"><h4>Lock with a 15-day window, framed as protecting gains</h4><p>"We've already seen significant improvement — locking protects that." Urgency without pressure.</p></div></div>
           </div>
         </div>
+
         <div class="card" style="margin-bottom:0">
           <div class="card-head"><span class="card-title">Pre-lock document checklist</span></div>
-          <div class="card-body" style="padding-top:4px;padding-bottom:4px">
+          <div class="card-body" style="padding-top:6px;padding-bottom:6px">
             <ul class="chk">
               <li><span class="ck">✓</span>Credit authorization</li>
               <li><span class="ck">✓</span>Income confirmed — W2s + paystubs (current year)</li>
@@ -317,6 +581,7 @@
             </ul>
           </div>
         </div>
+
       </div>
     </div>
 
@@ -335,6 +600,8 @@
 </div><!-- /.app -->
 
 <script>
+'use strict';
+
 let numOpts = 2;
 const optLabels = ['Option A', 'Option B', 'Option C'];
 const defaults = [
@@ -343,77 +610,95 @@ const defaults = [
   {rate: 6.125, loan: 495700, cc: 5200, esc: 6345, lc: 0,    payoff: 483209}
 ];
 
-function showTab(id, el) {
-  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  el.classList.add('active');
-  document.getElementById('panel-' + id).classList.add('active');
-}
-
+// ── Utilities ──────────────────────────────────────────────────────────
 function pmt(rate, nper, pv) {
   const r = rate / 12 / 100;
   if (r === 0) return pv / nper;
   return pv * r / (1 - Math.pow(1 + r, -nper));
 }
-function fm(n) { return '$' + Math.round(n).toLocaleString(); }
-function fd(n) { return '$' + Number(n).toFixed(2); }
-function fp(n) { return n.toFixed(1) + '%'; }
-function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
+const fm  = n => '$' + Math.round(n).toLocaleString();
+const fd  = n => '$' + Number(n).toFixed(2);
+const fp  = n => n.toFixed(1) + '%';
+const gv  = id => parseFloat(document.getElementById(id).value) || 0;
+const ogv = (i, key) => parseFloat(document.getElementById('o' + i + key).value) || 0;
 
+function ltvStyle(ltv) {
+  if (ltv < 70) return {color: '#059669', bar: '#10B981', msg: 'Under 70% — best pricing tier'};
+  if (ltv < 80) return {color: '#D97706', bar: '#F59E0B', msg: 'Under 80% — no PMI'};
+  return          {color: '#DC2626', bar: '#EF4444', msg: 'Over 80% — PMI may apply'};
+}
+
+// ── Tab switching ──────────────────────────────────────────────────────
+function showTab(id, el) {
+  document.querySelector('.tab.active').classList.remove('active');
+  document.querySelector('.panel.active').classList.remove('active');
+  el.classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+// ── Qualify & quote ────────────────────────────────────────────────────
 function cq() {
-  const ol = gv('q-ol'), or_ = gv('q-or'), bal = gv('q-bal'), ov = gv('q-ov'), tax = gv('q-tax'), ins = gv('q-ins');
-  const nl = gv('q-nl'), nr = gv('q-nr'), nv = gv('q-nv'), lc = gv('q-lc'), cc = gv('q-cc'), esc = gv('q-esc');
-  const oldPI = pmt(or_, 360, ol), newPI = pmt(nr, 360, nl);
-  const savPI = oldPI - newPI, annSav = savPI * 12;
-  const oldLTV = (ol / ov) * 100, newLTV = (nl / nv) * 100;
+  const ol = gv('q-ol'), or_ = gv('q-or'), ov = gv('q-ov'), tax = gv('q-tax'), ins = gv('q-ins');
+  const nl = gv('q-nl'), nr  = gv('q-nr'), nv = gv('q-nv'), lc  = gv('q-lc'), cc  = gv('q-cc'), esc = gv('q-esc');
+
+  const oldPI  = pmt(or_, 360, ol);
+  const newPI  = pmt(nr,  360, nl);
+  const savPI  = oldPI - newPI;
+  const annSav = savPI * 12;
+  const oldLTV = (ol / ov) * 100;
+  const newLTV = (nl / nv) * 100;
   const netCash = cc + esc - lc;
-  const ltvColor = newLTV < 70 ? '#0F6E56' : newLTV < 80 ? '#854F0B' : '#A32D2D';
-  const ltvBar   = newLTV < 70 ? '#1D9E75' : newLTV < 80 ? '#EF9F27' : '#E24B4A';
-  const ltvMsg   = newLTV < 70 ? 'Under 70% — best pricing tier' : newLTV < 80 ? 'Under 80% — no PMI' : 'Over 80% — PMI may apply';
+  const ltv = ltvStyle(newLTV);
 
   document.getElementById('q-metrics').innerHTML =
-    mcard('Old P&I', fd(oldPI), 'PITI: ' + fd(oldPI + tax + ins), '') +
-    mcard('New P&I', fd(newPI), 'PITI: ' + fd(newPI + tax + ins), '') +
-    mcard('Monthly savings', fd(savPI), fm(annSav) + ' per year', 'ok') +
-    mcard('Net cash to close', fm(netCash), lc > 0 ? 'after ' + fm(lc) + ' credit' : 'no credit applied', netCash <= 0 ? 'ok' : netCash < 3000 ? 'warn' : 'bad');
+    mcard('Old P&I',        fd(oldPI),  'PITI: ' + fd(oldPI + tax + ins), '') +
+    mcard('New P&I',        fd(newPI),  'PITI: ' + fd(newPI + tax + ins), '') +
+    mcard('Monthly savings', fd(savPI),  fm(annSav) + ' per year',          'ok') +
+    mcard('Net cash to close', fm(netCash),
+      lc > 0 ? 'after ' + fm(lc) + ' credit' : 'no credit applied',
+      netCash <= 0 ? 'ok' : netCash < 3000 ? 'warn' : 'bad');
 
   document.getElementById('q-ltv').innerHTML =
     '<table class="dt">' +
-    '<tr><td>Home value at purchase</td><td>' + fm(ov) + '</td></tr>' +
-    '<tr><td>Original LTV</td><td>' + fp(oldLTV) + '</td></tr>' +
-    '<tr><td>Current home value</td><td>' + fm(nv) + '</td></tr>' +
-    '<tr><td>New LTV</td><td style="color:' + ltvColor + '">' + fp(newLTV) + '</td></tr>' +
+    '<tr><td>Home value at purchase</td><td>' + fm(ov)  + '</td></tr>' +
+    '<tr><td>Original LTV</td><td>'            + fp(oldLTV) + '</td></tr>' +
+    '<tr><td>Current home value</td><td>'      + fm(nv)  + '</td></tr>' +
+    '<tr><td>New LTV</td><td style="color:' + ltv.color + '">' + fp(newLTV) + '</td></tr>' +
     '</table>' +
-    '<div class="ltvbar"><div class="ltvfill" style="width:' + Math.min(100, newLTV) + '%;background:' + ltvBar + '"></div></div>' +
-    '<p style="font-size:11px;color:var(--color-text-tertiary)">' + ltvMsg + '</p>';
+    '<div class="ltvbar"><div class="ltvfill" style="width:' + Math.min(100, newLTV) + '%;background:' + ltv.bar + '"></div></div>' +
+    '<p class="ltv-hint">' + ltv.msg + '</p>';
 
   document.getElementById('q-cash').innerHTML =
     '<table class="dt">' +
-    '<tr><td>Closing costs</td><td>' + fm(cc) + '</td></tr>' +
-    '<tr><td>Escrows and other costs</td><td>' + fm(esc) + '</td></tr>' +
+    '<tr><td>Closing costs</td><td>'          + fm(cc)  + '</td></tr>' +
+    '<tr><td>Escrows and other costs</td><td>'+ fm(esc) + '</td></tr>' +
     '<tr><td>Lender credit</td><td class="cr">−' + fm(lc) + '</td></tr>' +
-    '<tr><td>Net cash to close</td><td style="color:' + (netCash <= 0 ? '#0F6E56' : 'var(--color-text-primary)') + '">' + fm(netCash) + '</td></tr>' +
+    '<tr><td>Net cash to close</td><td style="color:' + (netCash <= 0 ? '#059669' : '#0F172A') + '">' + fm(netCash) + '</td></tr>' +
     '</table>' +
-    '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:6px">Escrows are your funds — existing balance returned within 20 days of payoff.</p>';
+    '<p class="ltv-hint" style="margin-top:8px">Escrows are your funds — existing balance returned within 20 days of payoff.</p>';
 
   const beMonths = (lc > 0 && savPI > 0) ? Math.round(lc / savPI) : null;
-  const appx = nv - ov;
   document.getElementById('q-insight').innerHTML =
-    'Savings of <b>' + fd(savPI) + '/mo</b> (' + fm(annSav) + '/yr). Home value up <b>' + fm(appx) + '</b> (' + fm(ov) + ' → ' + fm(nv) + '), dropping LTV from <b>' + fp(oldLTV) + ' → ' + fp(newLTV) + '</b>' + (newLTV < 70 ? ', unlocking best-tier pricing.' : '.') +
+    'Savings of <b>' + fd(savPI) + '/mo</b> (' + fm(annSav) + '/yr). ' +
+    'Home value up <b>' + fm(nv - ov) + '</b> (' + fm(ov) + ' → ' + fm(nv) + '), dropping LTV from ' +
+    '<b>' + fp(oldLTV) + ' → ' + fp(newLTV) + '</b>' +
+    (newLTV < 70 ? ', unlocking best-tier pricing.' : '.') +
     (beMonths ? ' Lender credit delivers <b>' + fm(lc) + ' on day one</b> — the lower-rate alternative only wins after <b>' + beMonths + ' months</b>. Solid recommendation for any client likely to refi within 4 years.' : '');
 
-  // Status bar
   document.getElementById('sb-savings').textContent = fd(savPI) + '/mo';
-  document.getElementById('sb-ltv').textContent = fp(newLTV);
-  document.getElementById('sb-net').textContent = fm(netCash);
-  document.getElementById('sb-be').textContent = beMonths ? beMonths + ' mo' : '—';
+  document.getElementById('sb-ltv').textContent     = fp(newLTV);
+  document.getElementById('sb-net').textContent     = fm(netCash);
+  document.getElementById('sb-be').textContent      = beMonths ? beMonths + ' mo' : '—';
   document.getElementById('sb-summary').textContent = fp(newLTV) + ' LTV · saves ' + fd(savPI) + '/mo';
 }
 
 function mcard(label, val, sub, cls) {
-  return '<div class="mcard"><div class="ml">' + label + '</div><div class="mv ' + cls + '">' + val + '</div><div class="ms">' + sub + '</div></div>';
+  return '<div class="mcard"><div class="ml">' + label + '</div>' +
+         '<div class="mv ' + cls + '">' + val + '</div>' +
+         '<div class="ms">' + sub + '</div></div>';
 }
 
+// ── Option builder ─────────────────────────────────────────────────────
 function setOpts(n) {
   numOpts = n;
   document.getElementById('ct2').classList.toggle('on', n === 2);
@@ -423,152 +708,204 @@ function setOpts(n) {
 }
 
 function buildOptInputs() {
-  const cls = numOpts === 2 ? 'opt2' : 'opt3';
   let html = '';
   for (let i = 0; i < numOpts; i++) {
     const d = defaults[i];
-    html += '<div class="ocard"><div class="ocard-head"><span class="otitle">' + optLabels[i] + '</span></div><div class="ocard-body">' +
-      field('Rate (%)', 'o'+i+'r', d.rate, 0.125, 'buildComparison()') +
-      field('Monthly P&I ($)', 'o'+i+'pi', pmt(d.rate,360,d.loan).toFixed(2), 0.01, 'buildComparison()') +
-      field('Loan amount ($)', 'o'+i+'l', d.loan, 1, 'buildComparison()') +
-      field('Closing costs ($)', 'o'+i+'cc', d.cc, 1, 'buildComparison()') +
-      field('Escrows and other costs ($)', 'o'+i+'esc', d.esc, 1, 'buildComparison()') +
-      field('Lender credit / points ($)', 'o'+i+'lc', d.lc, 1, 'buildComparison()') +
-      field('Payoff amount ($)', 'o'+i+'po', d.payoff, 1, 'buildComparison()') +
+    html +=
+      '<div class="ocard"><div class="ocard-head"><span class="otitle">' + optLabels[i] + '</span></div>' +
+      '<div class="ocard-body">' +
+      numField('Rate (%)',                    'o'+i+'r',  d.rate,                         0.125) +
+      numField('Monthly P&I ($)',             'o'+i+'pi', pmt(d.rate, 360, d.loan).toFixed(2), 0.01) +
+      numField('Loan amount ($)',             'o'+i+'l',  d.loan,                         1) +
+      numField('Closing costs ($)',           'o'+i+'cc', d.cc,                           1) +
+      numField('Escrows and other costs ($)', 'o'+i+'esc',d.esc,                          1) +
+      numField('Lender credit / points ($)',  'o'+i+'lc', d.lc,                           1) +
+      numField('Payoff amount ($)',           'o'+i+'po', d.payoff,                       1) +
       '</div></div>';
   }
-  document.getElementById('opt-inputs').className = 'opt-grid ' + cls;
+  document.getElementById('opt-inputs').className = 'opt-grid ' + (numOpts === 2 ? 'opt2' : 'opt3');
   document.getElementById('opt-inputs').innerHTML = html;
-  highlightRec();
+  // buildComparison() calls highlightRec() — do not call it here too
 }
 
-function field(lbl, id, val, step, cb) {
-  return '<div class="f"><label>' + lbl + '</label><input type="number" id="' + id + '" value="' + val + '" step="' + step + '" oninput="' + cb + '"></div>';
+function numField(lbl, id, val, step) {
+  return '<div class="f"><label>' + lbl + '</label>' +
+         '<input type="number" id="' + id + '" value="' + val + '" step="' + step + '" oninput="buildComparison()"></div>';
 }
 
-function highlightRec() {
-  // highlight recommended card (highest lc)
-  let maxLc = -Infinity, recI = 0;
-  for (let i = 0; i < numOpts; i++) {
-    const lc = parseFloat(document.getElementById('o'+i+'lc')?.value) || 0;
-    if (lc > maxLc) { maxLc = lc; recI = i; }
-  }
-  document.querySelectorAll('.ocard').forEach((c, i) => {
-    c.classList.toggle('rec', i === recI && maxLc > 0);
-    const head = c.querySelector('.ocard-head');
-    const existing = head.querySelector('.rbadge');
-    if (i === recI && maxLc > 0) {
-      if (!existing) head.insertAdjacentHTML('beforeend', '<span class="rbadge">rec.</span>');
-    } else {
-      if (existing) existing.remove();
-    }
-  });
-}
-
-function ogv(i, key) { return parseFloat(document.getElementById('o' + i + key).value) || 0; }
-
+let _cmpTimer = null;
 function buildComparison() {
-  highlightRec();
+  clearTimeout(_cmpTimer);
+  _cmpTimer = setTimeout(_doBuildComparison, 60);
+}
+
+function _doBuildComparison() {
   const opts = [];
   for (let i = 0; i < numOpts; i++) {
-    opts.push({
+    const o = {
       rate: ogv(i,'r'), pi: ogv(i,'pi'), loan: ogv(i,'l'),
-      cc: ogv(i,'cc'), esc: ogv(i,'esc'), lc: ogv(i,'lc'), payoff: ogv(i,'po')
-    });
-  }
-  opts.forEach(o => {
+      cc:   ogv(i,'cc'), esc: ogv(i,'esc'), lc: ogv(i,'lc'), payoff: ogv(i,'po')
+    };
     o.cashRec = o.loan - o.payoff;
-    o.netCost = o.cc + o.esc - o.lc;
+    opts.push(o);
+  }
+
+  // Rec = highest lender credit
+  const maxLc  = Math.max(...opts.map(o => o.lc));
+  const recIdx = opts.reduce((best, o, i) => o.lc > opts[best].lc ? i : best, 0);
+
+  // Update card borders and badges
+  document.querySelectorAll('.ocard').forEach((card, i) => {
+    const isRec = (i === recIdx && maxLc > 0);
+    card.classList.toggle('rec', isRec);
+    const head = card.querySelector('.ocard-head');
+    const badge = head.querySelector('.rbadge');
+    if (isRec && !badge) head.insertAdjacentHTML('beforeend', '<span class="rbadge">rec.</span>');
+    if (!isRec && badge) badge.remove();
   });
 
   const rows = [
-    {label: 'Rate', key: 'rate', fmt: v => v + '%', lowerBetter: true},
-    {label: 'Monthly P&I payment', key: 'pi', fmt: fd, lowerBetter: true},
-    {label: 'Loan amount', key: 'loan', fmt: fm, lowerBetter: true},
-    {label: 'Closing costs', key: 'cc', fmt: fm, lowerBetter: true},
-    {label: 'Escrows and other costs', key: 'esc', fmt: fm, lowerBetter: true},
-    {label: 'Lender credit / points', key: 'lc', fmt: v => v > 0 ? fm(v) : '—', lowerBetter: false},
-    {label: 'Payoff amount', key: 'payoff', fmt: fm, lowerBetter: true},
-    {label: 'Cash received / owed at closing', key: 'cashRec', fmt: v => v >= 0 ? fm(v) : '(' + fm(Math.abs(v)) + ' owed)', lowerBetter: false}
+    {label: 'Rate',                          key: 'rate',    fmt: v => v + '%', low: true},
+    {label: 'Monthly P&I payment',           key: 'pi',      fmt: fd,           low: true},
+    {label: 'Loan amount',                   key: 'loan',    fmt: fm,           low: true},
+    {label: 'Closing costs',                 key: 'cc',      fmt: fm,           low: true},
+    {label: 'Escrows and other costs',       key: 'esc',     fmt: fm,           low: true},
+    {label: 'Lender credit / points',        key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
+    {label: 'Payoff amount',                 key: 'payoff',  fmt: fm,           low: true},
+    {label: 'Cash received / owed at closing', key: 'cashRec',
+      fmt: v => v >= 0 ? fm(v) : '(' + fm(Math.abs(v)) + ' owed)', low: false}
   ];
-
-  const maxLc = Math.max(...opts.map(o => o.lc));
-  const recIdx = opts.reduce((best, o, i) => o.lc > opts[best].lc ? i : best, 0);
 
   const colW = Math.floor(65 / numOpts);
   let html = '<colgroup><col style="width:35%">';
   for (let i = 0; i < numOpts; i++) html += '<col style="width:' + colW + '%">';
   html += '</colgroup><thead><tr><th></th>';
   for (let i = 0; i < numOpts; i++) {
-    html += '<th class="r">' + optLabels[i] + (i === recIdx && maxLc > 0 ? ' <span class="rbadge">rec.</span>' : '') + '</th>';
+    html += '<th class="r">' + optLabels[i] +
+            (i === recIdx && maxLc > 0 ? ' <span class="rbadge">rec.</span>' : '') + '</th>';
   }
   html += '</tr></thead><tbody>';
 
   rows.forEach(row => {
     const vals = opts.map(o => o[row.key]);
-    const best = row.lowerBetter ? Math.min(...vals) : Math.max(...vals);
-    html += '<tr><td style="color:var(--color-text-secondary)">' + row.label + '</td>';
+    const best = row.low ? Math.min(...vals) : Math.max(...vals);
+    html += '<tr><td class="lbl">' + row.label + '</td>';
     opts.forEach(o => {
-      const v = o[row.key];
-      const isNA = (row.key === 'lc' && v === 0);
+      const v     = o[row.key];
+      const isNA  = (row.key === 'lc' && v === 0);
       const isBest = (v === best);
       html += '<td class="' + (isNA ? 'r' : isBest ? 'win' : 'lose') + '">' + row.fmt(v) + '</td>';
     });
     html += '</tr>';
   });
   html += '</tbody>';
-
   document.getElementById('cmp-tbl').innerHTML = html;
 
-  const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
-  const bestLc  = opts.reduce((a, b) => a.lc > b.lc ? a : b);
+  const bestPmt = opts.reduce((a, b) => a.pi  < b.pi  ? a : b);
+  const bestLc  = opts.reduce((a, b) => a.lc  > b.lc  ? a : b);
   let insight = '';
   if (bestLc.lc > 0 && bestLc !== bestPmt) {
-    const pmtDiff = bestPmt.pi - bestLc.pi;
-    const be = pmtDiff > 0 ? Math.round(bestLc.lc / pmtDiff) : null;
-    insight = '<b>' + optLabels[opts.indexOf(bestLc)] + '</b> delivers <b>' + fm(bestLc.lc) + ' in hand on day one</b>. The lower-payment option only wins after <b>' + (be ? be + ' months (' + (be / 12).toFixed(1) + ' yrs)' : '—') + '</b> — well beyond a typical refi window for most clients.';
+    const diff = bestPmt.pi - bestLc.pi;
+    const be   = diff > 0 ? Math.round(bestLc.lc / diff) : null;
+    insight = '<b>' + optLabels[opts.indexOf(bestLc)] + '</b> delivers <b>' + fm(bestLc.lc) +
+              ' in hand on day one</b>. The lower-payment option only wins after <b>' +
+              (be ? be + ' months (' + (be / 12).toFixed(1) + ' yrs)' : '—') +
+              '</b> — well beyond a typical refi window for most clients.';
   }
   document.getElementById('cmp-insight').innerHTML = insight;
 }
 
+// ── Email generator ────────────────────────────────────────────────────
 function ge() {
   const name  = document.getElementById('e-name').value  || 'Client';
   const agent = document.getElementById('e-agent').value || 'Nick';
   const date  = document.getElementById('e-date').value  || '2024';
-  const ol  = gv('e-ol') || 492000, or_ = gv('e-or') || 7.375;
-  const bal = gv('e-bal') || 483000, ov  = gv('e-ov') || 625000;
-  const nv  = gv('e-nv') || 695000, nl  = gv('e-nl') || 492100;
-  const nr  = gv('e-nr') || 6.375,  lc  = gv('e-lc');
+  const type  = document.getElementById('e-type').value;
+
+  const ol  = gv('e-ol'), or_ = gv('e-or');
+  const bal = gv('e-bal'), ov  = gv('e-ov');
+  const nv  = gv('e-nv'), nl  = gv('e-nl');
+  const nr  = gv('e-nr'), lc  = gv('e-lc');
   const cc  = gv('e-cc'), esc = gv('e-esc');
-  const type = document.getElementById('e-type').value;
-  const oldPINum = pmt(or_, 360, ol), newPINum = pmt(nr, 360, nl);
-  const savNum = oldPINum - newPINum;
-  const oldPI = oldPINum.toFixed(2), newPI = newPINum.toFixed(2);
-  const sav = savNum.toFixed(2), annSav = Math.round(savNum * 12).toLocaleString();
-  const ltv = Math.round((nl / nv) * 100), netCash = Math.round(cc + esc - lc);
+
+  const oldPINum = pmt(or_, 360, ol);
+  const newPINum = pmt(nr,  360, nl);
+  const savNum   = oldPINum - newPINum;
+  const oldPI    = oldPINum.toFixed(2);
+  const newPI    = newPINum.toFixed(2);
+  const sav      = savNum.toFixed(2);
+  const annSav   = Math.round(savNum * 12).toLocaleString();
+  const ltv      = Math.round((nl / nv) * 100);
+  const netCash  = Math.round(cc + esc - lc);
 
   let email = '';
   if (type === 'initial') {
-    email = 'Hi ' + name + ',\n\nGreat to hear from you — there\'s a real opportunity here right now.\n\nWhen you purchased your home in ' + date + ', we put you in a 30-year fixed at ' + or_ + '% for $' + Math.round(ol).toLocaleString() + '. Your principal and interest payment was $' + oldPI + '/month (taxes and insurance won\'t change with a refinance). After your most recent payment you owe approximately $' + Math.round(bal).toLocaleString() + '. Your home was valued at $' + Math.round(ov).toLocaleString() + ' at purchase.\n\nYour home should now be worth about $' + Math.round(nv).toLocaleString() + ', which brings your loan-to-value ratio down to ' + ltv + '%' + (ltv < 70 ? ' — unlocking best-tier pricing' : '') + '.\n\nFor a new 30-year fixed at ' + nr + '%, I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() + (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit to cover fees' : '') + '. Your new P&I payment would be $' + newPI + '/month — saving you $' + sav + '/month, or $' + annSav + '/year.\n\nOn costs: closing costs are estimated at $' + Math.round(cc).toLocaleString() + ' and escrows at closing are $' + Math.round(esc).toLocaleString() + (lc > 0 ? ', offset by the $' + Math.round(lc).toLocaleString() + ' lender credit — net cash to close is approximately $' + netCash.toLocaleString() : '.') + '.\n\nA quick note on escrows: that\'s your own money going into your new escrow account. You\'ll receive your existing escrow balance back within 20 days of payoff — it\'s essentially a wash.\n\nWe can also structure the loan so you have $0 due at closing by rolling in the escrow setup and skipping your next payment.\n\nTo get started I just need:\n— Confirmation your income hasn\'t changed\n— Permission to pull your credit\n\nI\'ll have your application and disclosures over the same day. Any questions, just ask.\n\nThanks,\n' + agent;
+    email =
+      'Hi ' + name + ',\n\n' +
+      'Great to hear from you — there\'s a real opportunity here right now.\n\n' +
+      'When you purchased your home in ' + date + ', we put you in a 30-year fixed at ' + or_ + '% for $' +
+      Math.round(ol).toLocaleString() + '. Your principal and interest payment was $' + oldPI +
+      '/month (taxes and insurance won\'t change with a refinance). After your most recent payment you owe ' +
+      'approximately $' + Math.round(bal).toLocaleString() + '. Your home was valued at $' +
+      Math.round(ov).toLocaleString() + ' at purchase.\n\n' +
+      'Your home should now be worth about $' + Math.round(nv).toLocaleString() +
+      ', which brings your loan-to-value ratio down to ' + ltv + '%' +
+      (ltv < 70 ? ' — unlocking best-tier pricing' : '') + '.\n\n' +
+      'For a new 30-year fixed at ' + nr + '%, I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() +
+      (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit to cover fees' : '') +
+      '. Your new P&I payment would be $' + newPI + '/month — saving you $' + sav + '/month, or $' + annSav + '/year.\n\n' +
+      'On costs: closing costs are estimated at $' + Math.round(cc).toLocaleString() +
+      ' and escrows at closing are $' + Math.round(esc).toLocaleString() +
+      (lc > 0 ? ', offset by the $' + Math.round(lc).toLocaleString() +
+        ' lender credit — net cash to close is approximately $' + netCash.toLocaleString() : '.') + '.\n\n' +
+      'A quick note on escrows: that\'s your own money going into your new escrow account. ' +
+      'You\'ll receive your existing escrow balance back within 20 days of payoff — it\'s essentially a wash.\n\n' +
+      'We can also structure the loan so you have $0 due at closing by rolling in the escrow setup and skipping your next payment.\n\n' +
+      'To get started I just need:\n' +
+      '— Confirmation your income hasn\'t changed\n' +
+      '— Permission to pull your credit\n\n' +
+      'I\'ll have your application and disclosures over the same day. Any questions, just ask.\n\n' +
+      'Thanks,\n' + agent;
   } else if (type === 'compete') {
-    email = 'Hi ' + name + ',\n\nAbsolutely — we can match that for you. Happy to offer ' + nr + '% with no points and $0 due at closing.\n\nHere\'s the quick comparison:\n\n  ' + nr + '% with ' + fm(lc) + ' lender credit: cash in your pocket on day one, payment $' + newPI + '/mo\n  ' + nr + '% no credit: same rate, same payment, no day-one benefit\n\nThe credit puts real money in your hands immediately. The no-credit version only wins if you never refinance again — which is unlikely given where rates are heading. Breakeven is well beyond a typical refi cycle.\n\nReady to lock? Just say the word and we\'ll handle the paperwork today.\n\nThanks,\n' + agent;
+    email =
+      'Hi ' + name + ',\n\n' +
+      'Absolutely — we can match that for you. Happy to offer ' + nr + '% with no points and $0 due at closing.\n\n' +
+      'Here\'s the quick comparison:\n\n' +
+      '  ' + nr + '% with ' + fm(lc) + ' lender credit: cash in your pocket on day one, payment $' + newPI + '/mo\n' +
+      '  ' + nr + '% no credit: same rate, same payment, no day-one benefit\n\n' +
+      'The credit puts real money in your hands immediately. The no-credit version only wins if you never ' +
+      'refinance again — which is unlikely given where rates are heading. Breakeven is well beyond a typical refi cycle.\n\n' +
+      'Ready to lock? Just say the word and we\'ll handle the paperwork today.\n\n' +
+      'Thanks,\n' + agent;
   } else {
-    email = 'Hi ' + name + ',\n\nMarket conditions are favorable right now and I recommend locking in your rate today.\n\nWe can lock at ' + nr + '%' + (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit' : '') + ' for a 15-day window — more than enough time to close. Your new P&I payment would be $' + newPI + '/month, saving $' + sav + '/month ($' + annSav + '/year).\n\nWe\'ve seen significant improvement since we started. Locking now protects those gains. Just reply confirming you\'d like to proceed and we\'ll lock today.\n\nThanks,\n' + agent;
+    email =
+      'Hi ' + name + ',\n\n' +
+      'Market conditions are favorable right now and I recommend locking in your rate today.\n\n' +
+      'We can lock at ' + nr + '%' +
+      (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit' : '') +
+      ' for a 15-day window — more than enough time to close. Your new P&I payment would be $' +
+      newPI + '/month, saving $' + sav + '/month ($' + annSav + '/year).\n\n' +
+      'We\'ve seen significant improvement since we started. Locking now protects those gains. ' +
+      'Just reply confirming you\'d like to proceed and we\'ll lock today.\n\n' +
+      'Thanks,\n' + agent;
   }
   document.getElementById('emailout').innerText = email;
 }
 
 function copyEmail(event) {
-  const t = document.getElementById('emailout').innerText;
-  navigator.clipboard.writeText(t).then(function() {
-    const b = event.target;
-    b.innerText = 'Copied!';
-    setTimeout(function() { b.innerText = 'Copy email'; }, 2000);
+  const text = document.getElementById('emailout').innerText;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.innerText = 'Copied!';
+    setTimeout(() => { btn.innerText = 'Copy email'; }, 2000);
   });
 }
 
+// ── Init ───────────────────────────────────────────────────────────────
 cq();
 buildOptInputs();
-buildComparison();
+_doBuildComparison();  // call directly on init (no debounce needed)
 ge();
 </script>
+</body>
+</html>
