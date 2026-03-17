@@ -394,6 +394,21 @@ body {
 .chk li:last-child { border-bottom: none; }
 .ck { color: var(--c-ok); font-size: 13px; flex-shrink: 0; font-weight: 700; }
 
+/* ── Email summary widget ────────────────────────────────────────────── */
+.e-summary {
+  background: var(--c-bg2);
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-md);
+  padding: 12px;
+  margin-top: 4px;
+}
+.e-sum-header { font-size: 10.5px; font-weight: 600; color: var(--c-text3); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 8px; }
+.e-sum-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; }
+.e-sum-item { display: flex; flex-direction: column; gap: 2px; }
+.e-sum-lbl { font-size: 10.5px; color: var(--c-text3); }
+.e-sum-val { font-size: 13.5px; font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
+.e-sum-val.ok { color: var(--c-ok); }
+
 /* ── Responsive ─────────────────────────────────────────────────────── */
 @media (max-width: 720px) {
   .qualify-layout, .email-layout, .checklist-layout { grid-template-columns: 1fr; }
@@ -509,33 +524,21 @@ body {
 
         <!-- Left: fields -->
         <div class="card" style="margin-bottom:0">
-          <div class="card-head"><span class="card-title">Scenario inputs</span></div>
+          <div class="card-head"><span class="card-title">Email settings</span></div>
           <div class="card-body">
             <div class="fg fg2">
               <div class="f"><label>Client name</label><input type="text" id="e-name" value="Olivia" oninput="ge()"></div>
               <div class="f"><label>Purchase date</label><input type="text" id="e-date" value="April 2024" oninput="ge()"></div>
             </div>
             <div class="fg fg2">
-              <div class="f"><label>Original amount ($)</label><input type="number" id="e-ol" value="492000" oninput="ge()"></div>
-              <div class="f"><label>Original rate (%)</label><input type="number" id="e-or" value="7.375" step="0.125" oninput="ge()"></div>
-            </div>
-            <div class="fg fg2">
-              <div class="f"><label>Current balance ($)</label><input type="number" id="e-bal" value="483000" oninput="ge()"></div>
-              <div class="f"><label>Home value at purchase ($)</label><input type="number" id="e-ov" value="625000" oninput="ge()"></div>
-            </div>
-            <div class="fg fg2">
-              <div class="f"><label>New home value ($)</label><input type="number" id="e-nv" value="695000" oninput="ge()"></div>
-              <div class="f"><label>New loan amount ($)</label><input type="number" id="e-nl" value="492100" oninput="ge()"></div>
-            </div>
-            <div class="fg fg2">
-              <div class="f"><label>New rate (%)</label><input type="number" id="e-nr" value="6.375" step="0.125" oninput="ge()"></div>
-              <div class="f"><label>Lender credit ($)</label><input type="number" id="e-lc" value="1295" oninput="ge()"></div>
-            </div>
-            <div class="fg fg2">
-              <div class="f"><label>Closing costs ($)</label><input type="number" id="e-cc" value="3840" oninput="ge()"></div>
-              <div class="f"><label>Escrows at closing ($)</label><input type="number" id="e-esc" value="6345" oninput="ge()"></div>
-            </div>
-            <div class="fg fg2">
+              <div class="f">
+                <label>Source</label>
+                <select id="e-source" oninput="ge()">
+                  <option value="qualify">Qualify &amp; quote</option>
+                  <option value="0">Option A</option>
+                  <option value="1">Option B</option>
+                </select>
+              </div>
               <div class="f">
                 <label>Email type</label>
                 <select id="e-type" oninput="ge()">
@@ -544,8 +547,11 @@ body {
                   <option value="lock">Lock recommendation</option>
                 </select>
               </div>
+            </div>
+            <div class="fg">
               <div class="f"><label>Your name</label><input type="text" id="e-agent" value="Nick" oninput="ge()"></div>
             </div>
+            <div class="e-summary" id="e-summary"></div>
           </div>
         </div>
 
@@ -647,6 +653,7 @@ function showTab(id, el) {
   document.querySelector('.panel.active').classList.remove('active');
   el.classList.add('active');
   document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'email') ge();
 }
 
 // ── Qualify & quote ────────────────────────────────────────────────────
@@ -713,6 +720,8 @@ function cq() {
   document.getElementById('sb-ltv').textContent     = fp(newLTV);
   document.getElementById('sb-net').textContent     = cashLabel;
   document.getElementById('sb-summary').textContent = fp(newLTV) + ' LTV · saves ' + fd(savPI) + '/mo';
+
+  ge();
 }
 
 function mcard(label, val, sub, cls) {
@@ -726,6 +735,7 @@ function setOpts(n) {
   numOpts = n;
   document.getElementById('ct2').classList.toggle('on', n === 2);
   document.getElementById('ct3').classList.toggle('on', n === 3);
+  updateEmailSourceOpts();
   buildOptInputs();
   buildComparison();
 }
@@ -855,30 +865,83 @@ function _doBuildComparison() {
               '</b> — well beyond the typical refi horizon.';
   }
   document.getElementById('cmp-insight').innerHTML = insight;
+
+  ge();
 }
 
 // ── Email generator ────────────────────────────────────────────────────
-function ge() {
-  const name  = document.getElementById('e-name').value  || 'Client';
-  const agent = document.getElementById('e-agent').value || 'Nick';
-  const date  = document.getElementById('e-date').value  || '2024';
-  const type  = document.getElementById('e-type').value;
+function updateEmailSourceOpts() {
+  const sel = document.getElementById('e-source');
+  if (!sel) return;
+  const hasC = !!sel.querySelector('option[value="2"]');
+  if (numOpts >= 3 && !hasC) {
+    sel.insertAdjacentHTML('beforeend', '<option value="2">Option C</option>');
+  } else if (numOpts < 3 && hasC) {
+    sel.querySelector('option[value="2"]').remove();
+    if (sel.value === '2') sel.value = 'qualify';
+  }
+}
 
-  const ol  = gv('e-ol'), or_ = gv('e-or');
-  const bal = gv('e-bal'), ov  = gv('e-ov');
-  const nv  = gv('e-nv'), nl  = gv('e-nl');
-  const nr  = gv('e-nr'), lc  = gv('e-lc');
-  const cc  = gv('e-cc'), esc = gv('e-esc');
+function ge() {
+  const name   = document.getElementById('e-name').value  || 'Client';
+  const agent  = document.getElementById('e-agent').value || 'Nick';
+  const date   = document.getElementById('e-date').value  || '2024';
+  const type   = document.getElementById('e-type').value;
+  const source = document.getElementById('e-source').value;
+
+  // Current loan always comes from qualify tab
+  const ol  = gv('q-ol');
+  const or_ = gv('q-or');
+  const bal = gv('q-bal');
+  const ov  = gv('q-ov');
+  const nv  = gv('q-nv');
+
+  // New loan details come from the selected source
+  let nl, nr, term, lc, cc, esc, payoff;
+  if (source === 'qualify') {
+    nl     = gv('q-nl');
+    nr     = gv('q-nr');
+    term   = gv('q-term') || 360;
+    lc     = gv('q-lc');
+    cc     = gv('q-cc');
+    esc    = gv('q-esc');
+    payoff = bal;
+  } else {
+    const i = parseInt(source);
+    nl     = ogv(i, 'l');
+    nr     = ogv(i, 'r');
+    term   = ogv(i, 't') || 360;
+    lc     = ogv(i, 'lc');
+    cc     = ogv(i, 'cc');
+    esc    = ogv(i, 'esc');
+    payoff = ogv(i, 'po');
+  }
 
   const oldPINum = pmt(or_, 360, ol);
-  const newPINum = pmt(nr,  360, nl);
+  const newPINum = pmt(nr, term, nl);
   const savNum   = oldPINum - newPINum;
   const oldPI    = oldPINum.toFixed(2);
   const newPI    = newPINum.toFixed(2);
   const sav      = savNum.toFixed(2);
   const annSav   = Math.round(savNum * 12).toLocaleString();
   const ltv      = Math.round((nl / nv) * 100);
-  const netCash  = Math.round(cc + esc - lc);
+  const cashDue  = payoff + cc + esc - nl - lc;
+  const cashAmt  = Math.abs(cashDue);
+  const cashLabel = cashDue <= 0 ? fm(cashAmt) + ' back' : fm(cashAmt) + ' due';
+  const cashColor = cashDue <= 0 ? '#059669' : cashDue < 5000 ? '#D97706' : '#DC2626';
+  const netCash   = Math.round(cc + esc - lc);
+
+  // Update summary widget
+  document.getElementById('e-summary').innerHTML =
+    '<div class="e-sum-header">Key numbers for this email</div>' +
+    '<div class="e-sum-grid">' +
+    '<div class="e-sum-item"><span class="e-sum-lbl">Rate</span><span class="e-sum-val">' + nr + '%</span></div>' +
+    '<div class="e-sum-item"><span class="e-sum-lbl">Monthly P&amp;I</span><span class="e-sum-val">$' + newPI + '</span></div>' +
+    '<div class="e-sum-item"><span class="e-sum-lbl">Monthly savings</span><span class="e-sum-val ok">$' + sav + '</span></div>' +
+    '<div class="e-sum-item"><span class="e-sum-lbl">New LTV</span><span class="e-sum-val">' + ltv + '%</span></div>' +
+    '<div class="e-sum-item"><span class="e-sum-lbl">Lender credit</span><span class="e-sum-val">' + (lc > 0 ? fm(lc) : '—') + '</span></div>' +
+    '<div class="e-sum-item"><span class="e-sum-lbl">Cash at closing</span><span class="e-sum-val" style="color:' + cashColor + '">' + cashLabel + '</span></div>' +
+    '</div>';
 
   let email = '';
   if (type === 'initial') {
@@ -893,7 +956,7 @@ function ge() {
       'Your home should now be worth about $' + Math.round(nv).toLocaleString() +
       ', which brings your loan-to-value ratio down to ' + ltv + '%' +
       (ltv < 70 ? ' — unlocking best-tier pricing' : '') + '.\n\n' +
-      'For a new 30-year fixed at ' + nr + '%, I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() +
+      'For a new ' + term + '-month fixed at ' + nr + '%, I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() +
       (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit to cover fees' : '') +
       '. Your new P&I payment would be $' + newPI + '/month — saving you $' + sav + '/month, or $' + annSav + '/year.\n\n' +
       'On costs: closing costs are estimated at $' + Math.round(cc).toLocaleString() +
@@ -945,9 +1008,9 @@ function copyEmail(event) {
 
 // ── Init ───────────────────────────────────────────────────────────────
 cq();
+updateEmailSourceOpts();
 buildOptInputs();
 _doBuildComparison();  // call directly on init (no debounce needed)
-ge();
 </script>
 </body>
 </html>
