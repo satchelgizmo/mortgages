@@ -222,6 +222,7 @@ body {
 .dt td:last-child { text-align: right; color: var(--c-text); font-variant-numeric: tabular-nums; font-weight: 500; }
 .dt tr:last-child td { border-bottom: none; font-weight: 700; font-size: 14px; }
 .dt .cr { color: var(--c-ok) !important; }
+.dt .db { color: var(--c-bad) !important; }
 
 /* LTV progress bar */
 .ltvbar { height: 6px; border-radius: 3px; background: var(--c-border3); margin: 10px 0 5px; overflow: hidden; }
@@ -428,7 +429,6 @@ body {
     <span class="app-name">Lockbox</span>
     <span class="app-desc">mortgage workflow</span>
     <div class="titlebar-spacer"></div>
-    <div class="app-pill" id="sb-summary">—</div>
   </div>
 
   <!-- Tab bar -->
@@ -599,6 +599,8 @@ body {
   <!-- Status bar -->
   <div class="app-statusbar">
     <div class="sb-item"><div class="sb-dot"></div><span class="sb-label">Ready</span></div>
+    <div class="sb-item"><span class="sb-label">Rate</span>&nbsp;<span class="sb-val" id="sb-rate">—</span></div>
+    <div class="sb-item"><span class="sb-label">Loan</span>&nbsp;<span class="sb-val" id="sb-loan">—</span></div>
     <div class="sb-item"><span class="sb-label">Savings</span>&nbsp;<span class="sb-val ok" id="sb-savings">—</span></div>
     <div class="sb-item"><span class="sb-label">LTV</span>&nbsp;<span class="sb-val" id="sb-ltv">—</span></div>
     <div class="sb-item"><span class="sb-label">Cash at closing</span>&nbsp;<span class="sb-val" id="sb-net">—</span></div>
@@ -613,9 +615,9 @@ body {
 let numOpts = 2;
 const optLabels = ['Option A', 'Option B', 'Option C'];
 const defaults = [
-  {rate: 6.375, term: 360, loan: 492100, cc: 3840, esc: 6345, lc: 1295, payoff: 483209},
-  {rate: 6.25,  term: 360, loan: 493900, cc: 4336, esc: 6345, lc: 0,    payoff: 483209},
-  {rate: 6.125, term: 360, loan: 495700, cc: 5200, esc: 6345, lc: 0,    payoff: 483209}
+  {rate: 6.375, term: 360, loan: 492100, cc: 3840, esc: 6345, lc: 1295, pts: 0, payoff: 483209},
+  {rate: 6.25,  term: 360, loan: 493900, cc: 4336, esc: 6345, lc: 0,    pts: 0, payoff: 483209},
+  {rate: 6.125, term: 360, loan: 495700, cc: 5200, esc: 6345, lc: 0,    pts: 0, payoff: 483209}
 ];
 
 // ── Utilities ──────────────────────────────────────────────────────────
@@ -687,11 +689,11 @@ function cq() {
   const cashColor = cashDue <= 0 ? '#059669' : cashDue < 5000 ? '#D97706' : '#DC2626';
   document.getElementById('q-cash').innerHTML =
     '<table class="dt">' +
-    '<tr><td>Payoff amount</td><td>'           + fm(bal) + '</td></tr>' +
-    '<tr><td>Closing costs</td><td>'           + fm(cc)  + '</td></tr>' +
-    '<tr><td>Escrows</td><td>'                 + fm(esc) + '</td></tr>' +
-    '<tr><td>Lender credit</td><td class="cr">−' + fm(lc) + '</td></tr>' +
-    '<tr><td>New loan amount</td><td class="cr">−' + fm(nl) + '</td></tr>' +
+    '<tr><td>New loan amount</td><td>'              + fm(nl)  + '</td></tr>' +
+    '<tr><td>Payoff amount</td><td class="db">−'   + fm(bal) + '</td></tr>' +
+    '<tr><td>Closing costs</td><td class="db">−'   + fm(cc)  + '</td></tr>' +
+    '<tr><td>Escrows / prepaids</td><td class="db">−' + fm(esc) + '</td></tr>' +
+    '<tr><td>Lender credit</td><td class="cr">+'   + fm(lc)  + '</td></tr>' +
     '<tr><td>Cash due at closing</td><td style="color:' + cashColor + '">' + cashLabel + '</td></tr>' +
     '</table>' +
     '<p class="ltv-hint" style="margin-top:8px">Escrows are your funds — old escrow balance returns within 20 days of payoff.</p>';
@@ -705,10 +707,11 @@ function cq() {
       ? 'Borrower receives <b>' + fm(-cashDue) + ' back</b> at closing — no cash required.'
       : 'Cash due at closing: <b>' + fm(cashDue) + '</b>. Can reduce by increasing loan amount or credit.');
 
+  document.getElementById('sb-rate').textContent    = nr + '%';
+  document.getElementById('sb-loan').textContent    = fm(nl);
   document.getElementById('sb-savings').textContent = fd(savPI) + '/mo';
   document.getElementById('sb-ltv').textContent     = fp(newLTV);
   document.getElementById('sb-net').textContent     = cashLabel;
-  document.getElementById('sb-summary').textContent = fp(newLTV) + ' LTV · saves ' + fd(savPI) + '/mo';
 
   ge();
 }
@@ -741,10 +744,11 @@ function buildOptInputs() {
       numField('Loan amount ($)',             'o'+i+'l',  d.loan,    1) +
       '<div class="pi-disp"><span class="pi-disp-lbl">Monthly P&amp;I</span>' +
         '<span class="pi-disp-val" id="o'+i+'pidisp">' + initPI + '</span></div>' +
-      numField('Closing costs ($)',           'o'+i+'cc', d.cc,      1) +
-      numField('Escrows ($)',                 'o'+i+'esc',d.esc,     1) +
-      numField('Lender credit / points ($)',  'o'+i+'lc', d.lc,      1) +
-      numField('Payoff amount ($)',           'o'+i+'po', d.payoff,  1) +
+      numField('Closing costs ($)',   'o'+i+'cc',  d.cc,      1) +
+      numField('Points ($)',          'o'+i+'pts', d.pts,     1) +
+      numField('Escrows / prepaids ($)', 'o'+i+'esc', d.esc,  1) +
+      numField('Lender credit ($)',   'o'+i+'lc',  d.lc,      1) +
+      numField('Payoff amount ($)',   'o'+i+'po',  d.payoff,  1) +
       '</div></div>';
   }
   document.getElementById('opt-inputs').className = 'opt-grid ' + (numOpts === 2 ? 'opt2' : 'opt3');
@@ -771,12 +775,13 @@ function _doBuildComparison() {
       term:   ogv(i,'t') || 360,
       loan:   ogv(i,'l'),
       cc:     ogv(i,'cc'),
+      pts:    ogv(i,'pts'),
       esc:    ogv(i,'esc'),
       lc:     ogv(i,'lc'),
       payoff: ogv(i,'po')
     };
-    o.pi      = pmt(o.rate, o.term, o.loan);          // always calculated
-    o.cashDue = o.payoff + o.cc + o.esc - o.loan - o.lc; // positive = due, negative = back
+    o.pi      = pmt(o.rate, o.term, o.loan);
+    o.cashDue = o.payoff + o.cc + o.pts + o.esc - o.loan - o.lc; // positive = due, negative = back
     opts.push(o);
   }
 
@@ -807,7 +812,8 @@ function _doBuildComparison() {
     {label: 'Monthly P&I',       key: 'pi',      fmt: fd,             low: true},
     {label: 'Loan amount',        key: 'loan',    fmt: fm,             low: true},
     {label: 'Closing costs',      key: 'cc',      fmt: fm,             low: true},
-    {label: 'Escrows',            key: 'esc',     fmt: fm,             low: true},
+    {label: 'Points',             key: 'pts',     fmt: v => v > 0 ? fm(v) : '—', low: true},
+    {label: 'Escrows / prepaids', key: 'esc',     fmt: fm,             low: true},
     {label: 'Lender credit',      key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
     {label: 'Cash due at closing',key: 'cashDue', fmt: fmCash,         low: true}
   ];
@@ -830,7 +836,7 @@ function _doBuildComparison() {
     html += '<tr><td class="lbl">' + row.label + '</td>';
     opts.forEach(o => {
       const v      = o[row.key];
-      const isNA   = (row.key === 'lc' && v === 0) || row.low === null;
+      const isNA   = ((row.key === 'lc' || row.key === 'pts') && v === 0) || row.low === null;
       const isBest = !isNA && (v === best);
       html += '<td class="' + (isNA ? 'r' : isBest ? 'win' : 'lose') + '">' + row.fmt(v) + '</td>';
     });
@@ -956,11 +962,12 @@ function ge() {
         loan:   ogv(i, 'l'),
         lc:     ogv(i, 'lc'),
         cc:     ogv(i, 'cc'),
+        pts:    ogv(i, 'pts'),
         esc:    ogv(i, 'esc'),
         payoff: ogv(i, 'po')
       };
       o.pi      = pmt(o.rate, o.term, o.loan);
-      o.cashDue = o.payoff + o.cc + o.esc - o.loan - o.lc;
+      o.cashDue = o.payoff + o.cc + o.pts + o.esc - o.loan - o.lc;
       opts.push(o);
     }
 
