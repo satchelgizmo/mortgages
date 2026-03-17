@@ -1,0 +1,482 @@
+
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+.app { max-width: 900px; padding: 1.5rem 0; font-family: var(--font-sans); }
+.tabs { display: flex; gap: 4px; margin-bottom: 1.5rem; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.tab { padding: 8px 16px; font-size: 13px; cursor: pointer; border: none; background: none; color: var(--color-text-secondary); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.tab.active { color: var(--color-text-primary); border-bottom: 2px solid var(--color-text-primary); font-weight: 500; }
+.tab:hover:not(.active) { color: var(--color-text-primary); }
+.panel { display: none; }
+.panel.active { display: block; }
+.section-label { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+.card { background: var(--color-background-primary); border: 0.5px solid var(--color-border-tertiary); border-radius: var(--border-radius-lg); padding: 1rem 1.25rem; margin-bottom: 1rem; }
+.card-title { font-size: 12px; font-weight: 500; color: var(--color-text-secondary); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+.field-row.three { grid-template-columns: 1fr 1fr 1fr; }
+.field-row.four { grid-template-columns: 1fr 1fr 1fr 1fr; }
+.field-row.one { grid-template-columns: 1fr; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 12px; color: var(--color-text-secondary); }
+.field input, .field select { font-size: 14px; padding: 6px 10px; border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-secondary); background: var(--color-background-secondary); color: var(--color-text-primary); width: 100%; }
+.metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin-bottom: 1rem; }
+.metric-grid.six { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.metric { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; }
+.metric .label { font-size: 11px; color: var(--color-text-secondary); margin-bottom: 4px; line-height: 1.3; }
+.metric .val { font-size: 20px; font-weight: 500; color: var(--color-text-primary); }
+.metric .val.green { color: #0F6E56; }
+.metric .val.amber { color: #854F0B; }
+.metric .val.red { color: #A32D2D; }
+.metric .sub { font-size: 11px; color: var(--color-text-tertiary); margin-top: 2px; }
+.divider { border: none; border-top: 0.5px solid var(--color-border-tertiary); margin: 14px 0; }
+.compare-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.compare-table th { font-size: 11px; font-weight: 500; color: var(--color-text-secondary); padding: 6px 10px; text-align: left; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.compare-table th.right { text-align: right; }
+.compare-table td { padding: 8px 10px; border-bottom: 0.5px solid var(--color-border-tertiary); color: var(--color-text-primary); }
+.compare-table td.right { text-align: right; }
+.compare-table td.best { color: #0F6E56; font-weight: 500; text-align: right; }
+.compare-table td.worse { text-align: right; }
+.compare-table tr.group-header td { font-size: 11px; font-weight: 500; color: var(--color-text-tertiary); text-transform: uppercase; letter-spacing: 0.05em; background: var(--color-background-secondary); padding: 5px 10px; }
+.compare-table tr:last-child td { border-bottom: none; }
+.rec-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); background: #E1F5EE; color: #085041; margin-left: 6px; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; border: 0.5px solid var(--color-border-secondary); border-radius: var(--border-radius-md); cursor: pointer; background: var(--color-background-secondary); color: var(--color-text-primary); }
+.btn:hover { background: var(--color-background-tertiary); }
+.btn.primary { background: var(--color-text-primary); color: var(--color-background-primary); border-color: var(--color-text-primary); }
+.email-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); border: 0.5px solid var(--color-border-tertiary); padding: 1rem; font-size: 13px; line-height: 1.7; color: var(--color-text-primary); white-space: pre-wrap; min-height: 220px; margin-top: 12px; }
+.step-row { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+.step-num { width: 26px; height: 26px; border-radius: 50%; background: var(--color-background-secondary); border: 0.5px solid var(--color-border-secondary); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 500; color: var(--color-text-secondary); flex-shrink: 0; margin-top: 2px; }
+.step-content h4 { font-size: 14px; font-weight: 500; margin-bottom: 3px; }
+.step-content p { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+.checklist { list-style: none; }
+.checklist li { display: flex; gap: 8px; align-items: baseline; font-size: 13px; padding: 5px 0; border-bottom: 0.5px solid var(--color-border-tertiary); }
+.checklist li:last-child { border-bottom: none; }
+.check { font-size: 16px; color: #1D9E75; flex-shrink: 0; }
+.objection-card { border-left: 3px solid #378ADD; padding-left: 12px; margin-bottom: 14px; }
+.objection-card .q { font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.objection-card .a { font-size: 13px; color: var(--color-text-secondary); line-height: 1.5; }
+.insight-box { background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 12px 14px; font-size: 13px; line-height: 1.6; color: var(--color-text-secondary); margin-bottom: 1rem; }
+.insight-box strong { color: var(--color-text-primary); }
+.ltvbar-wrap { height: 8px; border-radius: 4px; background: var(--color-border-tertiary); margin: 6px 0 2px; overflow: hidden; }
+.ltvbar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+.breakevenBar { height: 6px; border-radius: 3px; background: var(--color-border-tertiary); margin: 8px 0; overflow: hidden; }
+.breakevenFill { height: 100%; border-radius: 3px; background: #1D9E75; }
+</style>
+
+<div class="app">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('qualify',this)">Qualify & Quote</button>
+    <button class="tab" onclick="showTab('compare',this)">Option Builder</button>
+    <button class="tab" onclick="showTab('email',this)">Email Generator</button>
+    <button class="tab" onclick="showTab('objections',this)">Objection Handling</button>
+    <button class="tab" onclick="showTab('checklist',this)">Lock Checklist</button>
+  </div>
+
+  <!-- TAB 1: QUALIFY & QUOTE -->
+  <div class="panel active" id="panel-qualify">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">Current loan</div>
+        <div class="field-row" style="margin-bottom:10px;">
+          <div class="field"><label>Original loan amount ($)</label><input type="number" id="q-orig-loan" value="492000" oninput="calcQualify()"></div>
+          <div class="field"><label>Original rate (%)</label><input type="number" id="q-orig-rate" value="7.375" step="0.125" oninput="calcQualify()"></div>
+        </div>
+        <div class="field-row" style="margin-bottom:10px;">
+          <div class="field"><label>Current balance ($)</label><input type="number" id="q-balance" value="483000" oninput="calcQualify()"></div>
+          <div class="field"><label>Original home value ($)</label><input type="number" id="q-orig-val" value="625000" oninput="calcQualify()"></div>
+        </div>
+        <div class="field-row" style="margin-bottom:0;">
+          <div class="field"><label>Monthly taxes ($)</label><input type="number" id="q-taxes" value="850" oninput="calcQualify()"></div>
+          <div class="field"><label>Monthly insurance ($)</label><input type="number" id="q-ins" value="150" oninput="calcQualify()"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">New loan</div>
+        <div class="field-row" style="margin-bottom:10px;">
+          <div class="field"><label>New loan amount ($)</label><input type="number" id="q-new-loan" value="492100" oninput="calcQualify()"></div>
+          <div class="field"><label>New rate (%)</label><input type="number" id="q-new-rate" value="6.375" step="0.125" oninput="calcQualify()"></div>
+        </div>
+        <div class="field-row" style="margin-bottom:10px;">
+          <div class="field"><label>New home value ($)</label><input type="number" id="q-new-val" value="695000" oninput="calcQualify()"></div>
+          <div class="field"><label>Lender credit ($)</label><input type="number" id="q-credit" value="1295" oninput="calcQualify()"></div>
+        </div>
+        <div class="field-row" style="margin-bottom:0;">
+          <div class="field"><label>Est. closing costs ($)</label><input type="number" id="q-cc" value="3840" oninput="calcQualify()"></div>
+          <div class="field"><label>Est. escrows at closing ($)</label><input type="number" id="q-escrow" value="6345" oninput="calcQualify()"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-grid" id="qualify-metrics-top"></div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">LTV comparison</div>
+        <div id="ltv-section"></div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">Cash to close breakdown</div>
+        <div id="cash-section"></div>
+      </div>
+    </div>
+
+    <div class="insight-box" id="qualify-insight"></div>
+  </div>
+
+  <!-- TAB 2: OPTION BUILDER -->
+  <div class="panel" id="panel-compare">
+    <p class="section-label">Compare two scenarios</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem;">
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">Option A</div>
+        <div class="field" style="margin-bottom:8px;"><label>Rate (%)</label><input type="number" id="a-rate" value="6.375" step="0.125" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Loan amount ($)</label><input type="number" id="a-loan" value="492100" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Lender credit ($)</label><input type="number" id="a-lc" value="1295" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Loan costs / closing costs ($)</label><input type="number" id="a-cc" value="3840" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Escrows at closing ($)</label><input type="number" id="a-esc" value="6345" oninput="calcCompare()"></div>
+        <div class="field"><label>Payoff amount ($)</label><input type="number" id="a-payoff" value="483209" oninput="calcCompare()"></div>
+      </div>
+      <div class="card" style="margin-bottom:0;">
+        <div class="card-title">Option B</div>
+        <div class="field" style="margin-bottom:8px;"><label>Rate (%)</label><input type="number" id="b-rate" value="6.25" step="0.125" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Loan amount ($)</label><input type="number" id="b-loan" value="493900" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Lender credit ($)</label><input type="number" id="b-lc" value="0" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Loan costs / closing costs ($)</label><input type="number" id="b-cc" value="4336" oninput="calcCompare()"></div>
+        <div class="field" style="margin-bottom:8px;"><label>Escrows at closing ($)</label><input type="number" id="b-esc" value="6345" oninput="calcCompare()"></div>
+        <div class="field"><label>Payoff amount ($)</label><input type="number" id="b-payoff" value="483209" oninput="calcCompare()"></div>
+      </div>
+    </div>
+    <div class="card">
+      <table class="compare-table" id="compare-table"></table>
+    </div>
+    <div class="insight-box" id="compare-verdict"></div>
+  </div>
+
+  <!-- TAB 3: EMAIL GENERATOR -->
+  <div class="panel" id="panel-email">
+    <p class="section-label">Initial response email</p>
+    <div class="card">
+      <div class="field-row">
+        <div class="field"><label>Client first name</label><input type="text" id="e-name" value="Olivia" oninput="genEmail()"></div>
+        <div class="field"><label>Purchase date (e.g. April 2024)</label><input type="text" id="e-date" value="April 2024" oninput="genEmail()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Original loan amount ($)</label><input type="number" id="e-orig-loan" value="492000" oninput="genEmail()"></div>
+        <div class="field"><label>Original rate (%)</label><input type="number" id="e-orig-rate" value="7.375" step="0.125" oninput="genEmail()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Current balance ($)</label><input type="number" id="e-balance" value="483000" oninput="genEmail()"></div>
+        <div class="field"><label>Original home value ($)</label><input type="number" id="e-orig-val" value="625000" oninput="genEmail()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>New home value ($)</label><input type="number" id="e-new-val" value="695000" oninput="genEmail()"></div>
+        <div class="field"><label>New loan amount ($)</label><input type="number" id="e-new-loan" value="492100" oninput="genEmail()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>New rate (%)</label><input type="number" id="e-new-rate" value="6.375" step="0.125" oninput="genEmail()"></div>
+        <div class="field"><label>Lender credit ($)</label><input type="number" id="e-credit" value="1295" oninput="genEmail()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Est. closing costs ($)</label><input type="number" id="e-cc" value="3840" oninput="genEmail()"></div>
+        <div class="field"><label>Est. escrows at closing ($)</label><input type="number" id="e-escrow" value="6345" oninput="genEmail()"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Email type</label>
+          <select id="e-type" oninput="genEmail()">
+            <option value="initial">Initial response (day 1)</option>
+            <option value="compete">Rate match / competitor response</option>
+            <option value="lock">Lock recommendation</option>
+          </select>
+        </div>
+        <div class="field"><label>Your name</label><input type="text" id="e-agent" value="Nick" oninput="genEmail()"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:12px;color:var(--color-text-tertiary);">Edit below before sending</span>
+      <button class="btn" onclick="copyEmail()">Copy email</button>
+    </div>
+    <div class="email-box" id="email-output" contenteditable="true"></div>
+  </div>
+
+  <!-- TAB 4: OBJECTIONS -->
+  <div class="panel" id="panel-objections">
+    <p class="section-label">Common objections</p>
+    <div class="card">
+      <div class="objection-card">
+        <p class="q">"I got a lower rate from another lender."</p>
+        <p class="a">Match it immediately, then reframe mathematically. Calculate the breakeven on any point or cost difference. Most clients refi again in 3–4 years — day-one savings in your pocket usually wins over a marginally lower payment.</p>
+      </div>
+      <div class="objection-card">
+        <p class="q">"Should I wait for rates to drop more?"</p>
+        <p class="a">Quantify what they're leaving on the table each month they wait. "Lock your savings today — when we hit your target rate, we'll refi again." Show that the market moved in their favor already and could reverse.</p>
+      </div>
+      <div class="objection-card">
+        <p class="q">"I'm not sure about the closing costs."</p>
+        <p class="a">Separate loan costs from escrows. Escrows aren't a fee — they're their own money going into their own account, and they'll get the old escrow back within 20 days. Net cost is often far lower than the headline number suggests.</p>
+      </div>
+      <div class="objection-card">
+        <p class="q">"Can you send me a breakdown in writing?"</p>
+        <p class="a">Send the side-by-side table within the hour. Never make them ask twice. Use the Option Builder tab → paste directly into your email reply.</p>
+      </div>
+      <div class="objection-card">
+        <p class="q">"I want to think about it."</p>
+        <p class="a">Create urgency without pressure: "Totally fair — just note this rate is available for 15 days and markets can move. Happy to hold while you decide." Follow up in 24 hrs.</p>
+      </div>
+      <div class="objection-card">
+        <p class="q">"What if the appraisal comes in low?"</p>
+        <p class="a">Lead with the appraisal waiver. If not available, set conservative expectations early — a pleasant surprise beats a revised disclosure that shakes confidence.</p>
+      </div>
+    </div>
+    <p class="section-label" style="margin-top:1rem;">Breakeven calculator</p>
+    <div class="card">
+      <div class="field-row three">
+        <div class="field"><label>Monthly savings ($)</label><input type="number" id="be-savings" value="29" step="1" oninput="calcBreakeven()"></div>
+        <div class="field"><label>Day-1 credit benefit ($)</label><input type="number" id="be-credit" value="1785" oninput="calcBreakeven()"></div>
+        <div class="field"><label>Extra cost to buy down ($)</label><input type="number" id="be-cost" value="0" oninput="calcBreakeven()"></div>
+      </div>
+      <div id="be-result" style="font-size:13px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:8px;"></div>
+      <div class="breakevenBar"><div class="breakevenFill" id="be-bar" style="width:0%;"></div></div>
+      <p id="be-label" style="font-size:11px;color:var(--color-text-tertiary);margin-top:4px;"></p>
+    </div>
+  </div>
+
+  <!-- TAB 5: CHECKLIST -->
+  <div class="panel" id="panel-checklist">
+    <p class="section-label">Lead to lock — step by step</p>
+    <div class="card">
+      <div class="step-row"><div class="step-num">1</div><div class="step-content"><h4>Same-day response with full scenario</h4><p>Don't just say yes — send current loan recap, new payment, monthly savings, LTV improvement, and the no-cash-due option. Use the Email Generator tab.</p></div></div>
+      <div class="step-row"><div class="step-num">2</div><div class="step-content"><h4>Separate escrows from closing costs in every quote</h4><p>Escrows are not a fee. Show them gross cash to close, then break out escrows vs. loan costs vs. lender credit so the net number is clear and not alarming.</p></div></div>
+      <div class="step-row"><div class="step-num">3</div><div class="step-content"><h4>Pull credit & issue disclosures immediately</h4><p>As soon as income confirmed and credit authorized, the portal invite goes out the same hour. Don't let a day pass.</p></div></div>
+      <div class="step-row"><div class="step-num">4</div><div class="step-content"><h4>Proactively offer no-cash-due structure</h4><p>Before they ask, show how rolling escrows + skipping next payment = $0 due at closing. Remove the biggest friction point on your terms.</p></div></div>
+      <div class="step-row"><div class="step-num">5</div><div class="step-content"><h4>Match any competitor rate immediately</h4><p>Never let a competitor quote sit overnight. Match and reframe with breakeven math. Use the Objection Handling tab.</p></div></div>
+      <div class="step-row"><div class="step-num">6</div><div class="step-content"><h4>Send the side-by-side table on request — fast</h4><p>When they ask to "see both options," respond within the hour. Use the Option Builder tab. The table in this thread is what got her to lock.</p></div></div>
+      <div class="step-row"><div class="step-num">7</div><div class="step-content"><h4>One ask per email, end every message with a clear next step</h4><p>Multiple asks = no action. Each email ends with exactly one specific thing: sign disclosures, confirm income, pick a rate.</p></div></div>
+      <div class="step-row"><div class="step-num">8</div><div class="step-content"><h4>Lock with a 15-day window, frame it as protecting gains</h4><p>"We've already seen significant improvement — locking now protects that." Urgency without pressure.</p></div></div>
+    </div>
+    <p class="section-label">Pre-lock documentation checklist</p>
+    <div class="card">
+      <ul class="checklist">
+        <li><span class="check">✓</span>Credit authorization obtained</li>
+        <li><span class="check">✓</span>Income confirmed (W2 + paystubs, current year)</li>
+        <li><span class="check">✓</span>Bank statements (60 days)</li>
+        <li><span class="check">✓</span>Homeowners insurance declarations page</li>
+        <li><span class="check">✓</span>Current mortgage statement / payoff amount</li>
+        <li><span class="check">✓</span>Signed disclosure package</li>
+        <li><span class="check">✓</span>Appraisal waiver confirmed OR appraisal ordered</li>
+        <li><span class="check">✓</span>Marital status & legal name confirmed</li>
+        <li><span class="check">✓</span>HOA docs (if applicable)</li>
+        <li><span class="check">✓</span>Loan submitted to underwriting</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+}
+function pmt(rate, nper, pv) {
+  var r = rate / 12 / 100;
+  if (r === 0) return pv / nper;
+  return pv * r / (1 - Math.pow(1 + r, -nper));
+}
+function fmt(n) { return '$' + Math.round(n).toLocaleString(); }
+function fmtD(n) { return '$' + parseFloat(n).toFixed(2); }
+function pct(n) { return n.toFixed(1) + '%'; }
+
+function calcQualify() {
+  var origLoan = parseFloat(document.getElementById('q-orig-loan').value) || 492000;
+  var origRate = parseFloat(document.getElementById('q-orig-rate').value) || 7.375;
+  var origVal  = parseFloat(document.getElementById('q-orig-val').value)  || 625000;
+  var balance  = parseFloat(document.getElementById('q-balance').value)   || 483000;
+  var taxes    = parseFloat(document.getElementById('q-taxes').value)     || 0;
+  var ins      = parseFloat(document.getElementById('q-ins').value)       || 0;
+  var newLoan  = parseFloat(document.getElementById('q-new-loan').value)  || 492100;
+  var newRate  = parseFloat(document.getElementById('q-new-rate').value)  || 6.375;
+  var newVal   = parseFloat(document.getElementById('q-new-val').value)   || 695000;
+  var credit   = parseFloat(document.getElementById('q-credit').value)    || 0;
+  var cc       = parseFloat(document.getElementById('q-cc').value)        || 0;
+  var escrow   = parseFloat(document.getElementById('q-escrow').value)    || 0;
+
+  var oldPI  = pmt(origRate, 360, origLoan);
+  var newPI  = pmt(newRate,  360, newLoan);
+  var oldTI  = taxes + ins;
+  var oldTotal = oldPI + oldTI;
+  var newTotal = newPI + oldTI;
+  var savingsPI = oldPI - newPI;
+  var origLTV = (origLoan / origVal) * 100;
+  var newLTV  = (newLoan  / newVal)  * 100;
+
+  var grossCash = cc + escrow - credit;
+  var netCash   = grossCash;
+
+  var ltvColor = newLTV < 70 ? '#0F6E56' : newLTV < 80 ? '#854F0B' : '#A32D2D';
+  var ltvBarPct = Math.min(100, newLTV);
+  var ltvBarColor = newLTV < 70 ? '#1D9E75' : newLTV < 80 ? '#EF9F27' : '#E24B4A';
+
+  document.getElementById('qualify-metrics-top').innerHTML =
+    '<div class="metric"><div class="label">Old P&I</div><div class="val">' + fmtD(oldPI) + '</div><div class="sub">Total PITI: ' + fmtD(oldTotal) + '</div></div>' +
+    '<div class="metric"><div class="label">New P&I</div><div class="val">' + fmtD(newPI) + '</div><div class="sub">Total PITI: ' + fmtD(newTotal) + '</div></div>' +
+    '<div class="metric"><div class="label">Monthly savings</div><div class="val green">' + fmtD(savingsPI) + '</div><div class="sub">' + fmt(savingsPI * 12) + '/yr</div></div>' +
+    '<div class="metric"><div class="label">Breakeven (credit)</div><div class="val">' + (credit > 0 && savingsPI > 0 ? Math.round(credit / savingsPI) + ' mo' : '—') + '</div><div class="sub">months to match day-1 benefit</div></div>';
+
+  document.getElementById('ltv-section').innerHTML =
+    '<table style="width:100%;font-size:13px;border-collapse:collapse;">' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">Original LTV</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">' + pct(origLTV) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">Home value then</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">' + fmt(origVal) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">New home value</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">' + fmt(newVal) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;">New LTV</td><td style="text-align:right;padding:5px 0;font-weight:500;color:' + ltvColor + ';">' + pct(newLTV) + '</td></tr>' +
+    '</table>' +
+    '<div class="ltvbar-wrap"><div class="ltvbar-fill" style="width:' + ltvBarPct + '%;background:' + ltvBarColor + ';"></div></div>' +
+    '<p style="font-size:11px;color:var(--color-text-tertiary);">' + (newLTV < 70 ? 'Under 70% LTV — best pricing tier available' : newLTV < 80 ? 'Under 80% LTV — no PMI' : 'Over 80% LTV — PMI may apply') + '</p>';
+
+  document.getElementById('cash-section').innerHTML =
+    '<table style="width:100%;font-size:13px;border-collapse:collapse;">' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">Loan / closing costs</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">' + fmt(cc) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">Escrows at closing</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">' + fmt(escrow) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);">Lender credit</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:#0F6E56;">−' + fmt(credit) + '</td></tr>' +
+    '<tr><td style="font-weight:500;padding:6px 0;">Net cash to close</td><td style="text-align:right;padding:6px 0;font-weight:500;color:' + (netCash <= 0 ? '#0F6E56' : 'var(--color-text-primary)') + ';">' + fmt(netCash) + '</td></tr>' +
+    '</table>' +
+    '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:6px;">Note: escrows are client\'s own money — they receive their old escrow balance back within 20 days of payoff.</p>';
+
+  var beMonths = (credit > 0 && savingsPI > 0) ? Math.round(credit / savingsPI) : null;
+  document.getElementById('qualify-insight').innerHTML =
+    'Savings of <strong>' + fmtD(savingsPI) + '/mo</strong> (' + fmt(savingsPI * 12) + '/yr). ' +
+    'Home appreciation from <strong>' + fmt(origVal) + ' → ' + fmt(newVal) + '</strong> drops LTV from <strong>' + pct(origLTV) + ' → ' + pct(newLTV) + '</strong>' + (newLTV < 70 ? ', unlocking best-tier pricing.' : '.') +
+    (beMonths ? ' The lender credit delivers <strong>' + fmt(credit) + ' on day one</strong> — the alternative only beats this after <strong>' + beMonths + ' months</strong>, making the credit the clear recommendation for anyone likely to refinance again within 4 years.' : '');
+}
+
+function calcCompare() {
+  var aRate   = parseFloat(document.getElementById('a-rate').value)   || 6.375;
+  var aLoan   = parseFloat(document.getElementById('a-loan').value)   || 492100;
+  var aLC     = parseFloat(document.getElementById('a-lc').value)     || 1295;
+  var aCC     = parseFloat(document.getElementById('a-cc').value)     || 3840;
+  var aEsc    = parseFloat(document.getElementById('a-esc').value)    || 6345;
+  var aPayoff = parseFloat(document.getElementById('a-payoff').value) || 483209;
+  var bRate   = parseFloat(document.getElementById('b-rate').value)   || 6.25;
+  var bLoan   = parseFloat(document.getElementById('b-loan').value)   || 493900;
+  var bLC     = parseFloat(document.getElementById('b-lc').value)     || 0;
+  var bCC     = parseFloat(document.getElementById('b-cc').value)     || 4336;
+  var bEsc    = parseFloat(document.getElementById('b-esc').value)    || 6345;
+  var bPayoff = parseFloat(document.getElementById('b-payoff').value) || 483209;
+
+  var aPmt = pmt(aRate, 360, aLoan);
+  var bPmt = pmt(bRate, 360, bLoan);
+  var aCash = aLoan - aPayoff;
+  var bCash = bLoan - bPayoff;
+  var aNetCost = aCC + aEsc - aLC;
+  var bNetCost = bCC + bEsc - bLC;
+  var diffPmt = bPmt - aPmt;
+  var dayOneDiff = aLC - bLC;
+  var breakeven = (diffPmt > 0 && dayOneDiff > 0) ? Math.round(dayOneDiff / diffPmt) : null;
+
+  function best(a, b, lowerIsBetter) {
+    if (a === b) return ['', ''];
+    if (lowerIsBetter) return a < b ? ['best', 'worse'] : ['worse', 'best'];
+    return a > b ? ['best', 'worse'] : ['worse', 'best'];
+  }
+
+  var pmtB = best(aPmt, bPmt, true);
+  var lcB  = best(aLC, bLC, false);
+  var ccB  = best(aCC, bCC, true);
+  var escB = best(aEsc, bEsc, true);
+  var netB = best(aNetCost, bNetCost, true);
+  var cashB = best(aCash, bCash, false);
+
+  var recA = aLC > bLC;
+  var html = '<tr><th>Detail</th><th class="right">Option A' + (recA ? '<span class="rec-badge">Rec.</span>' : '') + '</th><th class="right">Option B' + (!recA ? '<span class="rec-badge">Rec.</span>' : '') + '</th></tr>';
+  html += '<tr class="group-header"><td colspan="3">Payment</td></tr>';
+  html += '<tr><td style="color:var(--color-text-secondary)">Rate</td><td class="right">' + aRate + '%</td><td class="right">' + bRate + '%</td></tr>';
+  html += '<tr><td style="color:var(--color-text-secondary)">Loan amount</td><td class="right">' + fmt(aLoan) + '</td><td class="right">' + fmt(bLoan) + '</td></tr>';
+  html += '<tr><td style="color:var(--color-text-secondary)">Monthly P&I</td><td class="' + pmtB[0] + '">' + fmtD(aPmt) + '</td><td class="' + pmtB[1] + '">' + fmtD(bPmt) + '</td></tr>';
+  html += '<tr class="group-header"><td colspan="3">Costs at closing</td></tr>';
+  html += '<tr><td style="color:var(--color-text-secondary)">Loan / closing costs</td><td class="' + ccB[0] + '">' + fmt(aCC) + '</td><td class="' + ccB[1] + '">' + fmt(bCC) + '</td></tr>';
+  html += '<tr><td style="color:var(--color-text-secondary)">Escrows at closing</td><td class="' + escB[0] + '">' + fmt(aEsc) + '</td><td class="' + escB[1] + '">' + fmt(bEsc) + '</td></tr>';
+  html += '<tr><td style="color:var(--color-text-secondary)">Lender credit</td><td class="' + lcB[0] + '">−' + fmt(aLC) + '</td><td class="' + lcB[1] + '">−' + fmt(bLC) + '</td></tr>';
+  html += '<tr><td style="font-weight:500">Net cash to close</td><td class="' + netB[0] + '">' + fmt(aNetCost) + '</td><td class="' + netB[1] + '">' + fmt(bNetCost) + '</td></tr>';
+  html += '<tr class="group-header"><td colspan="3">Cash received at closing</td></tr>';
+  html += '<tr><td style="color:var(--color-text-secondary)">Loan − payoff</td><td class="' + cashB[0] + '">' + fmt(aCash) + '</td><td class="' + cashB[1] + '">' + fmt(bCash) + '</td></tr>';
+
+  document.getElementById('compare-table').innerHTML = html;
+
+  var verdict = '';
+  if (breakeven) {
+    verdict = 'Option B\'s lower rate saves <strong>' + fmtD(bPmt - aPmt < 0 ? aPmt - bPmt : bPmt - aPmt) + '/mo</strong> more, but Option A\'s lender credit puts <strong>' + fmt(aLC) + ' in their pocket on day one</strong>. Breakeven is <strong>' + breakeven + ' months</strong> (' + (breakeven / 12).toFixed(1) + ' yrs) — Option A wins if they refinance before then.';
+  }
+  document.getElementById('compare-verdict').innerHTML = verdict;
+}
+
+function genEmail() {
+  var name     = document.getElementById('e-name').value     || 'Olivia';
+  var agent    = document.getElementById('e-agent').value    || 'Nick';
+  var date     = document.getElementById('e-date').value     || 'April 2024';
+  var origLoan = parseFloat(document.getElementById('e-orig-loan').value) || 492000;
+  var origRate = parseFloat(document.getElementById('e-orig-rate').value) || 7.375;
+  var origVal  = parseFloat(document.getElementById('e-orig-val').value)  || 625000;
+  var balance  = parseFloat(document.getElementById('e-balance').value)   || 483000;
+  var newVal   = parseFloat(document.getElementById('e-new-val').value)   || 695000;
+  var newLoan  = parseFloat(document.getElementById('e-new-loan').value)  || 492100;
+  var newRate  = parseFloat(document.getElementById('e-new-rate').value)  || 6.375;
+  var credit   = parseFloat(document.getElementById('e-credit').value)    || 0;
+  var cc       = parseFloat(document.getElementById('e-cc').value)        || 0;
+  var escrow   = parseFloat(document.getElementById('e-escrow').value)    || 0;
+  var type     = document.getElementById('e-type').value;
+
+  var oldPI = pmt(origRate, 360, origLoan).toFixed(2);
+  var newPI = pmt(newRate, 360, newLoan).toFixed(2);
+  var savings = (oldPI - newPI).toFixed(2);
+  var annSavings = Math.round(savings * 12).toLocaleString();
+  var newLTV = Math.round((newLoan / newVal) * 100);
+  var netCash = Math.round(cc + escrow - credit);
+  var grossCash = Math.round(cc + escrow);
+
+  var email = '';
+  if (type === 'initial') {
+    email = 'Hi ' + name + ',\n\nGreat to hear from you — there\'s a terrific opportunity here right now!\n\nWhen you purchased your home in ' + date + ', we put you in a 30-year fixed loan at ' + origRate + '% for $' + Math.round(origLoan).toLocaleString() + '. Your principal and interest payment was $' + oldPI + '/month (taxes and insurance are extra and won\'t change with a refinance). After your most recent payment you owe approximately $' + Math.round(balance).toLocaleString() + ', and your home value at purchase was $' + Math.round(origVal).toLocaleString() + '.\n\nYour home should now be worth about $' + Math.round(newVal).toLocaleString() + ', which drops your loan-to-value ratio to ' + newLTV + '% and unlocks even better pricing. For a new 30-year fixed at ' + newRate + '%, I\'d suggest a loan amount of $' + Math.round(newLoan).toLocaleString() + ' to roll in costs and keep your cash to close minimal' + (credit > 0 ? ', and we have a lender credit of $' + Math.round(credit).toLocaleString() + ' available to offset fees' : '') + '.\n\nYour new P&I payment would be $' + newPI + '/month — saving you $' + savings + '/month, or $' + annSavings + '/year. That\'s real money.\n\nOn closing costs: the estimated loan costs are $' + Math.round(cc).toLocaleString() + ' and escrows at closing are $' + Math.round(escrow).toLocaleString() + (credit > 0 ? ' — offset by the $' + Math.round(credit).toLocaleString() + ' lender credit, bringing your net cash to close to approximately $' + netCash.toLocaleString() : ', for an estimated $' + grossCash.toLocaleString() + ' at closing') + '. (Note: escrows are your own funds going into your new account — you\'ll receive your existing escrow balance back within 20 days of payoff.)\n\nWe can also structure the loan so you have $0 due at closing by rolling in your escrow account setup and skipping your next mortgage payment.\n\nTo get the ball rolling, I just need:\n- Confirmation your income hasn\'t changed significantly\n- Permission to pull your credit\n\nOnce I have those I\'ll have your application and disclosures over right away. Any questions, just ask!\n\nThanks,\n' + agent;
+  } else if (type === 'compete') {
+    email = 'Hi ' + name + ',\n\nAbsolutely — we can match that for you. Happy to offer ' + newRate + '% with no points and no cash due at closing.\n\nHere\'s a quick look at the two structures:\n\n  ' + newRate + '% with lender credit: $' + Math.round(credit).toLocaleString() + ' in your pocket on day one, payment $' + newPI + '/mo\n  ' + newRate + '% with no credit: $0 upfront, same payment\n\nThe credit scenario puts real money in your hands immediately. The alternative only wins if you never refinance again — which is unlikely given where rates are heading. By our math the breakeven is well beyond a typical refi cycle.\n\nIf you\'re ready to move forward, just say the word and we\'ll lock today.\n\nThanks,\n' + agent;
+  } else {
+    email = 'Hi ' + name + ',\n\nThe market has moved in our favor and I recommend locking your rate now.\n\nWe can lock at ' + newRate + '%' + (credit > 0 ? ' with a $' + Math.round(credit).toLocaleString() + ' lender credit' : '') + ' for a 15-day lock period — plenty of time to close. Your new P&I payment would be $' + newPI + '/month, saving you $' + savings + '/month ($' + annSavings + '/year).\n\nWe\'ve already seen significant improvement from where we started, and locking now protects those gains. Just reply letting me know you\'d like to proceed at ' + newRate + '% and we\'ll handle the paperwork.\n\nThanks,\n' + agent;
+  }
+  document.getElementById('email-output').innerText = email;
+}
+
+function copyEmail() {
+  var text = document.getElementById('email-output').innerText;
+  navigator.clipboard.writeText(text).then(function() {
+    var btn = event.target;
+    btn.innerText = 'Copied!';
+    setTimeout(function() { btn.innerText = 'Copy email'; }, 2000);
+  });
+}
+
+function calcBreakeven() {
+  var savings = parseFloat(document.getElementById('be-savings').value) || 0;
+  var credit  = parseFloat(document.getElementById('be-credit').value)  || 0;
+  var cost    = parseFloat(document.getElementById('be-cost').value)    || 0;
+  var net = credit - cost;
+  var r = document.getElementById('be-result');
+  var bar = document.getElementById('be-bar');
+  var lbl = document.getElementById('be-label');
+  if (savings <= 0) { r.innerHTML = 'Enter a positive monthly savings amount.'; return; }
+  if (net > 0) {
+    var months = Math.round(net / savings);
+    r.innerHTML = 'Alternative breaks even at <strong>' + months + ' months</strong> (' + (months/12).toFixed(1) + ' yrs). Day-1 benefit: <strong>$' + Math.round(net).toLocaleString() + '</strong>.';
+    bar.style.width = Math.min(100, Math.round((48 / months) * 100)) + '%';
+    lbl.innerText = 'Bar = how far 48 months (typical refi cycle) gets you toward breakeven';
+  } else if (cost > 0) {
+    var months2 = Math.round(cost / savings);
+    r.innerHTML = 'Buydown cost breakeven: <strong>' + months2 + ' months</strong> (' + (months2/12).toFixed(1) + ' yrs).';
+    bar.style.width = Math.min(100, Math.round((48/months2)*100)) + '%';
+    lbl.innerText = 'Based on 48-month typical refi cycle';
+  } else {
+    r.innerHTML = 'No differential — same net position on day one.';
+    bar.style.width = '0%'; lbl.innerText = '';
+  }
+}
+
+calcQualify(); calcCompare(); genEmail(); calcBreakeven();
+</script>
