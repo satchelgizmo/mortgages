@@ -294,6 +294,19 @@ body {
 }
 .ocard-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
 
+/* ── Calculated P&I display in option cards ─────────────────────────── */
+.pi-disp {
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  border-radius: var(--r-md);
+  padding: 9px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.pi-disp-lbl { font-size: 10.5px; font-weight: 600; color: #065F46; text-transform: uppercase; letter-spacing: 0.06em; }
+.pi-disp-val { font-size: 18px; font-weight: 700; color: var(--c-ok); font-variant-numeric: tabular-nums; }
+
 /* ── Comparison table ───────────────────────────────────────────────── */
 .cmp-wrap {
   border: 1px solid var(--c-border2);
@@ -428,7 +441,7 @@ body {
                 <div class="f"><label>Original rate (%)</label><input type="number" id="q-or" value="7.375" step="0.125" oninput="cq()"></div>
               </div>
               <div class="fg fg2">
-                <div class="f"><label>Current balance ($)</label><input type="number" id="q-bal" value="483000" oninput="cq()"></div>
+                <div class="f"><label>Payoff amount ($)</label><input type="number" id="q-bal" value="483000" oninput="cq()"></div>
                 <div class="f"><label>Home value at purchase ($)</label><input type="number" id="q-ov" value="625000" oninput="cq()"></div>
               </div>
               <div class="fg fg2">
@@ -440,9 +453,10 @@ body {
           <div class="card">
             <div class="card-head"><span class="card-title">New loan</span></div>
             <div class="card-body">
-              <div class="fg fg2">
-                <div class="f"><label>New loan amount ($)</label><input type="number" id="q-nl" value="492100" oninput="cq()"></div>
-                <div class="f"><label>New rate (%)</label><input type="number" id="q-nr" value="6.375" step="0.125" oninput="cq()"></div>
+              <div class="fg fg3">
+                <div class="f"><label>Loan amount ($)</label><input type="number" id="q-nl" value="492100" oninput="cq()"></div>
+                <div class="f"><label>Rate (%)</label><input type="number" id="q-nr" value="6.375" step="0.125" oninput="cq()"></div>
+                <div class="f"><label>Term (months)</label><input type="number" id="q-term" value="360" min="1" oninput="cq()"></div>
               </div>
               <div class="fg fg2">
                 <div class="f"><label>Current home value ($)</label><input type="number" id="q-nv" value="695000" oninput="cq()"></div>
@@ -465,7 +479,7 @@ body {
               <div class="card-body" id="q-ltv"></div>
             </div>
             <div class="card" style="margin-bottom:0">
-              <div class="card-head"><span class="card-title">Cash to close</span></div>
+              <div class="card-head"><span class="card-title">Cash due at closing</span></div>
               <div class="card-body" id="q-cash"></div>
             </div>
           </div>
@@ -592,8 +606,7 @@ body {
     <div class="sb-item"><div class="sb-dot"></div><span class="sb-label">Ready</span></div>
     <div class="sb-item"><span class="sb-label">Savings</span>&nbsp;<span class="sb-val ok" id="sb-savings">—</span></div>
     <div class="sb-item"><span class="sb-label">LTV</span>&nbsp;<span class="sb-val" id="sb-ltv">—</span></div>
-    <div class="sb-item"><span class="sb-label">Net cash</span>&nbsp;<span class="sb-val" id="sb-net">—</span></div>
-    <div class="sb-item"><span class="sb-label">Breakeven</span>&nbsp;<span class="sb-val" id="sb-be">—</span></div>
+    <div class="sb-item"><span class="sb-label">Cash at closing</span>&nbsp;<span class="sb-val" id="sb-net">—</span></div>
     <div class="sb-spacer"></div>
   </div>
 
@@ -605,9 +618,9 @@ body {
 let numOpts = 2;
 const optLabels = ['Option A', 'Option B', 'Option C'];
 const defaults = [
-  {rate: 6.375, loan: 492100, cc: 3840, esc: 6345, lc: 1295, payoff: 483209},
-  {rate: 6.25,  loan: 493900, cc: 4336, esc: 6345, lc: 0,    payoff: 483209},
-  {rate: 6.125, loan: 495700, cc: 5200, esc: 6345, lc: 0,    payoff: 483209}
+  {rate: 6.375, term: 360, loan: 492100, cc: 3840, esc: 6345, lc: 1295, payoff: 483209},
+  {rate: 6.25,  term: 360, loan: 493900, cc: 4336, esc: 6345, lc: 0,    payoff: 483209},
+  {rate: 6.125, term: 360, loan: 495700, cc: 5200, esc: 6345, lc: 0,    payoff: 483209}
 ];
 
 // ── Utilities ──────────────────────────────────────────────────────────
@@ -638,57 +651,67 @@ function showTab(id, el) {
 
 // ── Qualify & quote ────────────────────────────────────────────────────
 function cq() {
-  const ol = gv('q-ol'), or_ = gv('q-or'), ov = gv('q-ov'), tax = gv('q-tax'), ins = gv('q-ins');
-  const nl = gv('q-nl'), nr  = gv('q-nr'), nv = gv('q-nv'), lc  = gv('q-lc'), cc  = gv('q-cc'), esc = gv('q-esc');
+  const ol  = gv('q-ol'),  or_  = gv('q-or'),  ov  = gv('q-ov'), tax = gv('q-tax'), ins = gv('q-ins');
+  const bal = gv('q-bal');
+  const nl  = gv('q-nl'),  nr   = gv('q-nr'),  nv  = gv('q-nv');
+  const term = gv('q-term') || 360;
+  const lc  = gv('q-lc'),  cc   = gv('q-cc'),  esc = gv('q-esc');
 
-  const oldPI  = pmt(or_, 360, ol);
-  const newPI  = pmt(nr,  360, nl);
+  const oldPI  = pmt(or_, 360, ol);   // original loan assumed 30yr
+  const newPI  = pmt(nr, term, nl);
   const savPI  = oldPI - newPI;
   const annSav = savPI * 12;
   const oldLTV = (ol / ov) * 100;
   const newLTV = (nl / nv) * 100;
-  const netCash = cc + esc - lc;
+  // Cash due = what borrower owes/receives. Positive = due, negative = back.
+  const cashDue = bal + cc + esc - nl - lc;
   const ltv = ltvStyle(newLTV);
 
+  const cashAmt   = Math.abs(cashDue);
+  const cashLabel = cashDue <= 0 ? fm(cashAmt) + ' back' : fm(cashAmt) + ' due';
+  const cashSub   = cashDue <= 0 ? 'back at closing' : 'due at closing';
+  const cashCls   = cashDue <= 0 ? 'ok' : cashDue < 5000 ? 'warn' : 'bad';
+
   document.getElementById('q-metrics').innerHTML =
-    mcard('Old P&I',        fd(oldPI),  'PITI: ' + fd(oldPI + tax + ins), '') +
-    mcard('New P&I',        fd(newPI),  'PITI: ' + fd(newPI + tax + ins), '') +
-    mcard('Monthly savings', fd(savPI),  fm(annSav) + ' per year',          'ok') +
-    mcard('Net cash to close', fm(netCash),
-      lc > 0 ? 'after ' + fm(lc) + ' credit' : 'no credit applied',
-      netCash <= 0 ? 'ok' : netCash < 3000 ? 'warn' : 'bad');
+    mcard('Old P&I',         fd(oldPI),   'PITI: ' + fd(oldPI + tax + ins), '') +
+    mcard('New P&I',         fd(newPI),   'PITI: ' + fd(newPI + tax + ins), '') +
+    mcard('Monthly savings', fd(savPI),   fm(annSav) + ' per year',          'ok') +
+    mcard('Cash at closing', cashLabel,   cashSub,                           cashCls);
 
   document.getElementById('q-ltv').innerHTML =
     '<table class="dt">' +
-    '<tr><td>Home value at purchase</td><td>' + fm(ov)  + '</td></tr>' +
-    '<tr><td>Original LTV</td><td>'            + fp(oldLTV) + '</td></tr>' +
-    '<tr><td>Current home value</td><td>'      + fm(nv)  + '</td></tr>' +
+    '<tr><td>Home value at purchase</td><td>' + fm(ov)     + '</td></tr>' +
+    '<tr><td>Original LTV</td><td>'           + fp(oldLTV) + '</td></tr>' +
+    '<tr><td>Current home value</td><td>'     + fm(nv)     + '</td></tr>' +
     '<tr><td>New LTV</td><td style="color:' + ltv.color + '">' + fp(newLTV) + '</td></tr>' +
     '</table>' +
     '<div class="ltvbar"><div class="ltvfill" style="width:' + Math.min(100, newLTV) + '%;background:' + ltv.bar + '"></div></div>' +
     '<p class="ltv-hint">' + ltv.msg + '</p>';
 
+  const cashColor = cashDue <= 0 ? '#059669' : cashDue < 5000 ? '#D97706' : '#DC2626';
   document.getElementById('q-cash').innerHTML =
     '<table class="dt">' +
-    '<tr><td>Closing costs</td><td>'          + fm(cc)  + '</td></tr>' +
-    '<tr><td>Escrows and other costs</td><td>'+ fm(esc) + '</td></tr>' +
+    '<tr><td>Payoff amount</td><td>'           + fm(bal) + '</td></tr>' +
+    '<tr><td>Closing costs</td><td>'           + fm(cc)  + '</td></tr>' +
+    '<tr><td>Escrows</td><td>'                 + fm(esc) + '</td></tr>' +
     '<tr><td>Lender credit</td><td class="cr">−' + fm(lc) + '</td></tr>' +
-    '<tr><td>Net cash to close</td><td style="color:' + (netCash <= 0 ? '#059669' : '#0F172A') + '">' + fm(netCash) + '</td></tr>' +
+    '<tr><td>New loan amount</td><td class="cr">−' + fm(nl) + '</td></tr>' +
+    '<tr><td>Cash due at closing</td><td style="color:' + cashColor + '">' + cashLabel + '</td></tr>' +
     '</table>' +
-    '<p class="ltv-hint" style="margin-top:8px">Escrows are your funds — existing balance returned within 20 days of payoff.</p>';
+    '<p class="ltv-hint" style="margin-top:8px">Escrows are your funds — old escrow balance returns within 20 days of payoff.</p>';
 
-  const beMonths = (lc > 0 && savPI > 0) ? Math.round(lc / savPI) : null;
   document.getElementById('q-insight').innerHTML =
-    'Savings of <b>' + fd(savPI) + '/mo</b> (' + fm(annSav) + '/yr). ' +
+    'Saves <b>' + fd(savPI) + '/mo</b> (' + fm(annSav) + '/yr) on a ' + term + '-month term. ' +
     'Home value up <b>' + fm(nv - ov) + '</b> (' + fm(ov) + ' → ' + fm(nv) + '), dropping LTV from ' +
     '<b>' + fp(oldLTV) + ' → ' + fp(newLTV) + '</b>' +
-    (newLTV < 70 ? ', unlocking best-tier pricing.' : '.') +
-    (beMonths ? ' Lender credit delivers <b>' + fm(lc) + ' on day one</b> — the lower-rate alternative only wins after <b>' + beMonths + ' months</b>. Solid recommendation for any client likely to refi within 4 years.' : '');
+    (newLTV < 70 ? ', unlocking best-tier pricing.' : '.') + ' ' +
+    (cashDue <= 0
+      ? 'Borrower receives <b>' + fm(-cashDue) + ' back</b> at closing — no cash required.'
+      : 'Cash due at closing: <b>' + fm(cashDue) + '</b>. Can reduce by increasing loan amount or credit.');
 
   document.getElementById('sb-savings').textContent = fd(savPI) + '/mo';
   document.getElementById('sb-ltv').textContent     = fp(newLTV);
-  document.getElementById('sb-net').textContent     = fm(netCash);
-  document.getElementById('sb-be').textContent      = beMonths ? beMonths + ' mo' : '—';
+  document.getElementById('sb-net').textContent     = cashLabel;
   document.getElementById('sb-summary').textContent = fp(newLTV) + ' LTV · saves ' + fd(savPI) + '/mo';
 }
 
@@ -711,21 +734,24 @@ function buildOptInputs() {
   let html = '';
   for (let i = 0; i < numOpts; i++) {
     const d = defaults[i];
+    const initPI = fd(pmt(d.rate, d.term, d.loan));
     html +=
       '<div class="ocard"><div class="ocard-head"><span class="otitle">' + optLabels[i] + '</span></div>' +
       '<div class="ocard-body">' +
-      numField('Rate (%)',                    'o'+i+'r',  d.rate,                         0.125) +
-      numField('Monthly P&I ($)',             'o'+i+'pi', pmt(d.rate, 360, d.loan).toFixed(2), 0.01) +
-      numField('Loan amount ($)',             'o'+i+'l',  d.loan,                         1) +
-      numField('Closing costs ($)',           'o'+i+'cc', d.cc,                           1) +
-      numField('Escrows and other costs ($)', 'o'+i+'esc',d.esc,                          1) +
-      numField('Lender credit / points ($)',  'o'+i+'lc', d.lc,                           1) +
-      numField('Payoff amount ($)',           'o'+i+'po', d.payoff,                       1) +
+      numField('Rate (%)',                    'o'+i+'r',  d.rate,    0.125) +
+      numField('Term (months)',               'o'+i+'t',  d.term,    1) +
+      numField('Loan amount ($)',             'o'+i+'l',  d.loan,    1) +
+      '<div class="pi-disp"><span class="pi-disp-lbl">Monthly P&amp;I</span>' +
+        '<span class="pi-disp-val" id="o'+i+'pidisp">' + initPI + '</span></div>' +
+      numField('Closing costs ($)',           'o'+i+'cc', d.cc,      1) +
+      numField('Escrows ($)',                 'o'+i+'esc',d.esc,     1) +
+      numField('Lender credit / points ($)',  'o'+i+'lc', d.lc,      1) +
+      numField('Payoff amount ($)',           'o'+i+'po', d.payoff,  1) +
       '</div></div>';
   }
   document.getElementById('opt-inputs').className = 'opt-grid ' + (numOpts === 2 ? 'opt2' : 'opt3');
   document.getElementById('opt-inputs').innerHTML = html;
-  // buildComparison() calls highlightRec() — do not call it here too
+  // buildComparison() calls highlight — do not call it here too
 }
 
 function numField(lbl, id, val, step) {
@@ -743,37 +769,49 @@ function _doBuildComparison() {
   const opts = [];
   for (let i = 0; i < numOpts; i++) {
     const o = {
-      rate: ogv(i,'r'), pi: ogv(i,'pi'), loan: ogv(i,'l'),
-      cc:   ogv(i,'cc'), esc: ogv(i,'esc'), lc: ogv(i,'lc'), payoff: ogv(i,'po')
+      rate:   ogv(i,'r'),
+      term:   ogv(i,'t') || 360,
+      loan:   ogv(i,'l'),
+      cc:     ogv(i,'cc'),
+      esc:    ogv(i,'esc'),
+      lc:     ogv(i,'lc'),
+      payoff: ogv(i,'po')
     };
-    o.cashRec = o.loan - o.payoff;
+    o.pi      = pmt(o.rate, o.term, o.loan);          // always calculated
+    o.cashDue = o.payoff + o.cc + o.esc - o.loan - o.lc; // positive = due, negative = back
     opts.push(o);
   }
+
+  // Update P&I displays in cards
+  opts.forEach((o, i) => {
+    const el = document.getElementById('o' + i + 'pidisp');
+    if (el) el.textContent = fd(o.pi);
+  });
 
   // Rec = highest lender credit
   const maxLc  = Math.max(...opts.map(o => o.lc));
   const recIdx = opts.reduce((best, o, i) => o.lc > opts[best].lc ? i : best, 0);
 
-  // Update card borders and badges
   document.querySelectorAll('.ocard').forEach((card, i) => {
     const isRec = (i === recIdx && maxLc > 0);
     card.classList.toggle('rec', isRec);
-    const head = card.querySelector('.ocard-head');
+    const head  = card.querySelector('.ocard-head');
     const badge = head.querySelector('.rbadge');
     if (isRec && !badge) head.insertAdjacentHTML('beforeend', '<span class="rbadge">rec.</span>');
     if (!isRec && badge) badge.remove();
   });
 
+  const fmCash = v => v <= 0 ? fm(-v) + ' back' : fm(v) + ' due';
+
   const rows = [
-    {label: 'Rate',                          key: 'rate',    fmt: v => v + '%', low: true},
-    {label: 'Monthly P&I payment',           key: 'pi',      fmt: fd,           low: true},
-    {label: 'Loan amount',                   key: 'loan',    fmt: fm,           low: true},
-    {label: 'Closing costs',                 key: 'cc',      fmt: fm,           low: true},
-    {label: 'Escrows and other costs',       key: 'esc',     fmt: fm,           low: true},
-    {label: 'Lender credit / points',        key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
-    {label: 'Payoff amount',                 key: 'payoff',  fmt: fm,           low: true},
-    {label: 'Cash received / owed at closing', key: 'cashRec',
-      fmt: v => v >= 0 ? fm(v) : '(' + fm(Math.abs(v)) + ' owed)', low: false}
+    {label: 'Rate',               key: 'rate',    fmt: v => v + '%',  low: true},
+    {label: 'Term',               key: 'term',    fmt: v => v + ' mo', low: null}, // informational only
+    {label: 'Monthly P&I',       key: 'pi',      fmt: fd,             low: true},
+    {label: 'Loan amount',        key: 'loan',    fmt: fm,             low: true},
+    {label: 'Closing costs',      key: 'cc',      fmt: fm,             low: true},
+    {label: 'Escrows',            key: 'esc',     fmt: fm,             low: true},
+    {label: 'Lender credit',      key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
+    {label: 'Cash due at closing',key: 'cashDue', fmt: fmCash,         low: true}
   ];
 
   const colW = Math.floor(65 / numOpts);
@@ -787,13 +825,15 @@ function _doBuildComparison() {
   html += '</tr></thead><tbody>';
 
   rows.forEach(row => {
-    const vals = opts.map(o => o[row.key]);
-    const best = row.low ? Math.min(...vals) : Math.max(...vals);
+    const vals   = opts.map(o => o[row.key]);
+    const best   = row.low === true  ? Math.min(...vals)
+                 : row.low === false ? Math.max(...vals)
+                 : null; // null = no winner highlighted
     html += '<tr><td class="lbl">' + row.label + '</td>';
     opts.forEach(o => {
-      const v     = o[row.key];
-      const isNA  = (row.key === 'lc' && v === 0);
-      const isBest = (v === best);
+      const v      = o[row.key];
+      const isNA   = (row.key === 'lc' && v === 0) || row.low === null;
+      const isBest = !isNA && (v === best);
       html += '<td class="' + (isNA ? 'r' : isBest ? 'win' : 'lose') + '">' + row.fmt(v) + '</td>';
     });
     html += '</tr>';
@@ -801,16 +841,18 @@ function _doBuildComparison() {
   html += '</tbody>';
   document.getElementById('cmp-tbl').innerHTML = html;
 
-  const bestPmt = opts.reduce((a, b) => a.pi  < b.pi  ? a : b);
-  const bestLc  = opts.reduce((a, b) => a.lc  > b.lc  ? a : b);
+  // Breakeven insight — belongs on this tab
+  const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
+  const bestLc  = opts.reduce((a, b) => a.lc > b.lc ? a : b);
   let insight = '';
   if (bestLc.lc > 0 && bestLc !== bestPmt) {
     const diff = bestPmt.pi - bestLc.pi;
     const be   = diff > 0 ? Math.round(bestLc.lc / diff) : null;
-    insight = '<b>' + optLabels[opts.indexOf(bestLc)] + '</b> delivers <b>' + fm(bestLc.lc) +
-              ' in hand on day one</b>. The lower-payment option only wins after <b>' +
+    insight = '<b>' + optLabels[opts.indexOf(bestLc)] + '</b> puts <b>' + fm(bestLc.lc) +
+              ' in the borrower\'s pocket on day one</b>. ' +
+              'The lower-payment option only comes out ahead after <b>' +
               (be ? be + ' months (' + (be / 12).toFixed(1) + ' yrs)' : '—') +
-              '</b> — well beyond a typical refi window for most clients.';
+              '</b> — well beyond the typical refi horizon.';
   }
   document.getElementById('cmp-insight').innerHTML = insight;
 }
