@@ -625,7 +625,7 @@ function pmt(rate, nper, pv) {
   return pv * r / (1 - Math.pow(1 + r, -nper));
 }
 const fm  = n => '$' + Math.round(n).toLocaleString();
-const fd  = n => '$' + Number(n).toFixed(2);
+const fd  = n => '$' + n.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 const fp  = n => n.toFixed(1) + '%';
 const gv  = id => parseFloat(document.getElementById(id).value) || 0;
 const ogv = (i, key) => parseFloat(document.getElementById('o' + i + key).value) || 0;
@@ -871,7 +871,7 @@ function ge() {
   const ov  = gv('q-ov');
   const nv  = gv('q-nv');
   const oldPINum = pmt(or_, 360, ol);
-  const oldPI    = oldPINum.toFixed(2);
+  const oldPI    = fd(oldPINum);  // e.g. $3,208.47
 
   let email = '';
 
@@ -882,16 +882,16 @@ function ge() {
     const lc   = gv('q-lc'),  cc   = gv('q-cc'), esc = gv('q-esc');
     const newPINum = pmt(nr, term, nl);
     const savNum   = oldPINum - newPINum;
-    const newPI    = newPINum.toFixed(2);
-    const sav      = savNum.toFixed(2);
-    const annSav   = Math.round(savNum * 12).toLocaleString();
+    const newPI    = fd(newPINum);
+    const sav      = fd(savNum);
+    const annSav   = fm(Math.round(savNum * 12));
     const ltv      = Math.round((nl / nv) * 100);
     const cashDue  = bal + cc + esc - nl - lc;
     const cashAmt  = Math.abs(cashDue);
     const cashLabel = cashDue <= 0 ? fm(cashAmt) + ' back' : fm(cashAmt) + ' due';
     const cashColor = cashDue <= 0 ? '#059669' : cashDue < 5000 ? '#D97706' : '#DC2626';
 
-    // Term display: 360 → "30-year", 180 → "15-year", else "X-month"
+    // Term display: 360 -> "30-year", 180 -> "15-year", else "X-month"
     const termDisp = term % 12 === 0 ? (term / 12) + '-year' : term + '-month';
 
     // Month names relative to today
@@ -907,39 +907,38 @@ function ge() {
       '<div class="e-sum-header">Key numbers for this email</div>' +
       '<div class="e-sum-grid">' +
       '<div class="e-sum-item"><span class="e-sum-lbl">Rate</span><span class="e-sum-val">' + nr + '%</span></div>' +
-      '<div class="e-sum-item"><span class="e-sum-lbl">Monthly P&amp;I</span><span class="e-sum-val">$' + newPI + '</span></div>' +
-      '<div class="e-sum-item"><span class="e-sum-lbl">Monthly savings</span><span class="e-sum-val ok">$' + sav + '</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Monthly P&amp;I</span><span class="e-sum-val">' + newPI + '</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Monthly savings</span><span class="e-sum-val ok">' + sav + '</span></div>' +
       '<div class="e-sum-item"><span class="e-sum-lbl">New LTV</span><span class="e-sum-val">' + ltv + '%</span></div>' +
-      '<div class="e-sum-item"><span class="e-sum-lbl">Lender credit</span><span class="e-sum-val">' + (lc > 0 ? fm(lc) : '—') + '</span></div>' +
+      '<div class="e-sum-item"><span class="e-sum-lbl">Lender credit</span><span class="e-sum-val">' + (lc > 0 ? fm(lc) : 'none') + '</span></div>' +
       '<div class="e-sum-item"><span class="e-sum-lbl">Cash at closing</span><span class="e-sum-val" style="color:' + cashColor + '">' + cashLabel + '</span></div>' +
       '</div>';
 
     email =
       'Hi ' + name + ',\n\n' +
       'I hope all has been well! We\'ve seen a significant decline in mortgage rates recently and have a great opportunity to lower your monthly payment with a rate/term refinance.\n\n' +
-      'Back in ' + date + ', we put you in a 30-year fixed loan at ' + or_ + '% for $' +
-      Math.round(ol).toLocaleString() + '. Your principal and interest payment was $' + oldPI +
-      '/month — taxes and insurance are extra and won\'t change with a refinance. After your ' + nextMo +
-      ' 1st payment you should owe approximately $' + Math.round(bal).toLocaleString() +
-      ', and your home was valued at $' + Math.round(ov).toLocaleString() + ' at purchase.\n\n' +
-      'Your home should now be worth about $' + Math.round(nv).toLocaleString() +
+      'Back in ' + date + ', we put you in a 30-year fixed loan at ' + or_ + '% for ' + fm(ol) + '. Your principal and interest payment was ' + oldPI +
+      '/month. Taxes and insurance are extra and won\'t change with a refinance. After your ' + nextMo +
+      ' 1st payment you should owe approximately ' + fm(bal) +
+      ', and your home was valued at ' + fm(ov) + ' at purchase.\n\n' +
+      'Your home should now be worth about ' + fm(nv) +
       '. For a new ' + termDisp + ' fixed loan we can currently offer ' + nr + '%' +
-      (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit' : '') +
-      '. I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() +
+      (lc > 0 ? ' with a ' + fm(lc) + ' lender credit' : '') +
+      '. I\'d suggest a loan amount of ' + fm(nl) +
       (lc > 0 ? ' to roll in some closing costs and reduce your cash needed to close' : '') + '.\n\n' +
-      'For a ' + termDisp + ' fixed $' + Math.round(nl).toLocaleString() + ' loan at ' + nr +
-      '%, your new principal and interest payment would be $' + newPI +
-      '/month — saving you $' + sav + '/month, or $' + annSav + '/year. That\'s a significant improvement!\n\n' +
+      'For a ' + termDisp + ' fixed ' + fm(nl) + ' loan at ' + nr +
+      '%, your new principal and interest payment would be ' + newPI +
+      '/month, saving you ' + sav + '/month or ' + annSav + '/year. That\'s a significant improvement!\n\n' +
       'We\'ll collect your taxes and insurance at closing to set up a new escrow account, but you\'ll get a ' +
-      'refund of your existing escrow balance within 20 days of payoff — so that\'s a wash. You\'d pay your ' +
+      'refund of your existing escrow balance within 20 days of payoff, so that\'s a wash. You\'d pay your ' +
       curMo + ' payment on schedule (if you haven\'t already), bring your ' + nextMo +
-      ' payment and escrows to closing, receive your escrow refund within 20 days, and your new payment of $' +
+      ' payment and escrows to closing, receive your escrow refund within 20 days, and your new payment of ' +
       newPI + '/month begins on ' + firstPayMo + ' 1st.' +
       (cashDue > 0
         ? ' With this structure, estimated cash at closing is ' + fm(cashDue) + '.\n\n'
         : ' With this structure, you\'d actually receive ' + fm(cashAmt) + ' back at closing.\n\n') +
       'I also have this rate available if you\'d prefer to roll in your new escrow and skip your next two ' +
-      'mortgage payments — still saving and taking advantage of that great rate with $0 due at closing. ' +
+      'mortgage payments, still saving and taking advantage of that great rate with $0 due at closing. ' +
       'Just let me know if you\'d prefer that structure.\n\n' +
       'To move forward, I just need confirmation that your income hasn\'t changed and permission to run ' +
       'your credit. I\'ll have your loan application and disclosures over to you the same day, along with a ' +
@@ -968,13 +967,13 @@ function ge() {
     // Summary widget: one row per option
     let sumRows = '';
     opts.forEach(o => {
-      const cd = Math.abs(o.cashDue);
-      const cl = o.cashDue <= 0 ? fm(cd) + ' back' : fm(cd) + ' due';
+      const cd  = Math.abs(o.cashDue);
+      const cl  = o.cashDue <= 0 ? fm(cd) + ' back' : fm(cd) + ' due';
       const cc2 = o.cashDue <= 0 ? '#059669' : o.cashDue < 5000 ? '#D97706' : '#DC2626';
       sumRows +=
         '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' rate</span><span class="e-sum-val">' + o.rate + '%</span></div>' +
-        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' P&amp;I</span><span class="e-sum-val">$' + o.pi.toFixed(2) + '</span></div>' +
-        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' credit</span><span class="e-sum-val">' + (o.lc > 0 ? fm(o.lc) : '—') + '</span></div>' +
+        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' P&amp;I</span><span class="e-sum-val">' + fd(o.pi) + '</span></div>' +
+        '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' credit</span><span class="e-sum-val">' + (o.lc > 0 ? fm(o.lc) : 'none') + '</span></div>' +
         '<div class="e-sum-item"><span class="e-sum-lbl">' + o.label + ' cash</span><span class="e-sum-val" style="color:' + cc2 + '">' + cl + '</span></div>';
     });
     document.getElementById('e-summary').innerHTML =
@@ -986,19 +985,19 @@ function ge() {
     opts.forEach(o => {
       const cd  = Math.abs(o.cashDue);
       const cl  = o.cashDue <= 0 ? fm(cd) + ' back at closing' : fm(cd) + ' due at closing';
-      optBlocks += o.label + ' — ' + o.rate + '%\n' +
-        '  Payment:        $' + o.pi.toFixed(2) + '/month P&I\n' +
-        '  Loan amount:    ' + fm(o.loan) + '\n' +
+      optBlocks += o.label + ': ' + o.rate + '%\n' +
+        '  Payment:         ' + fd(o.pi) + '/month P&I\n' +
+        '  Loan amount:     ' + fm(o.loan) + '\n' +
         (o.lc > 0
-          ? '  Lender credit:  ' + fm(o.lc) + ' (applied toward closing costs)\n'
-          : '  Lender credit:  none\n') +
+          ? '  Lender credit:   ' + fm(o.lc) + ' (applied toward closing costs)\n'
+          : '  Lender credit:   none\n') +
         '  Cash at closing: ' + cl + '\n\n';
     });
 
-    // Savings vs current for the lowest-rate option
+    // Savings vs current for the lowest-payment option
     const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
     const savNum  = oldPINum - bestPmt.pi;
-    const annSav  = Math.round(savNum * 12).toLocaleString();
+    const annSav  = fm(Math.round(savNum * 12));
 
     // Breakeven insight if a lender-credit option exists alongside a lower-payment one
     const bestLc = opts.reduce((a, b) => a.lc > b.lc ? a : b);
@@ -1009,20 +1008,20 @@ function ge() {
       insight =
         'A note on the tradeoff: ' + bestLc.label + ' puts ' + fm(bestLc.lc) +
         ' in your pocket on day one through the lender credit. ' +
-        bestPmt.label + '\'s lower rate saves an extra $' + diff.toFixed(2) + '/month, ' +
+        bestPmt.label + '\'s lower rate saves an extra ' + fd(diff) + '/month, ' +
         'but you wouldn\'t break even on that difference for ' +
         (be ? be + ' months (' + (be / 12).toFixed(1) + ' years)' : 'a long time') +
-        ' — well beyond the typical refinance horizon. Most borrowers are better served by the immediate cash.\n\n';
+        ', well beyond the typical refinance horizon. Most borrowers are better served by the immediate cash.\n\n';
     }
 
     email =
       'Hi ' + name + ',\n\n' +
       'Here\'s a side-by-side breakdown of the ' + numOpts + ' options we put together based on today\'s rates.\n\n' +
-      'Your current loan: ' + or_ + '% — $' + oldPI + '/month P&I. ' +
-      'Even the highest rate below saves you $' + savNum.toFixed(2) + '/month ($' + annSav + '/year).\n\n' +
+      'Your current loan is ' + or_ + '% at ' + oldPI + '/month P&I. ' +
+      'Even the highest rate below saves you ' + fd(savNum) + '/month (' + annSav + '/year).\n\n' +
       optBlocks +
       insight +
-      (numOpts === 2 ? 'Both options carry' : 'All three options carry') + ' the same escrow setup at closing — that\'s your own money going into your new escrow account, ' +
+      (numOpts === 2 ? 'Both options carry' : 'All three options carry') + ' the same escrow setup at closing. That\'s your own money going into your new escrow account, ' +
       'not a fee. Your existing escrow balance comes back to you within 20 days of payoff.\n\n' +
       'Happy to walk through any of these in detail. Just let me know which direction feels right and we\'ll get moving.\n\n' +
       'Thanks,\n' + agent;
