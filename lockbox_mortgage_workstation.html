@@ -890,7 +890,18 @@ function ge() {
     const cashAmt  = Math.abs(cashDue);
     const cashLabel = cashDue <= 0 ? fm(cashAmt) + ' back' : fm(cashAmt) + ' due';
     const cashColor = cashDue <= 0 ? '#059669' : cashDue < 5000 ? '#D97706' : '#DC2626';
-    const netCash   = Math.round(cc + esc - lc);
+
+    // Term display: 360 → "30-year", 180 → "15-year", else "X-month"
+    const termDisp = term % 12 === 0 ? (term / 12) + '-year' : term + '-month';
+
+    // Month names relative to today
+    function mo(n) {
+      const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() + n);
+      return d.toLocaleString('en-US', { month: 'long' });
+    }
+    const curMo      = mo(0);
+    const nextMo     = mo(1);
+    const firstPayMo = mo(2);
 
     document.getElementById('e-summary').innerHTML =
       '<div class="e-sum-header">Key numbers for this email</div>' +
@@ -905,29 +916,34 @@ function ge() {
 
     email =
       'Hi ' + name + ',\n\n' +
-      'Great to hear from you — there\'s a real opportunity here right now.\n\n' +
-      'When you purchased your home in ' + date + ', we put you in a 30-year fixed at ' + or_ + '% for $' +
+      'I hope all has been well! We\'ve seen a significant decline in mortgage rates recently and have a great opportunity to lower your monthly payment with a rate/term refinance.\n\n' +
+      'Back in ' + date + ', we put you in a 30-year fixed loan at ' + or_ + '% for $' +
       Math.round(ol).toLocaleString() + '. Your principal and interest payment was $' + oldPI +
-      '/month (taxes and insurance won\'t change with a refinance). After your most recent payment you owe ' +
-      'approximately $' + Math.round(bal).toLocaleString() + '. Your home was valued at $' +
-      Math.round(ov).toLocaleString() + ' at purchase.\n\n' +
+      '/month — taxes and insurance are extra and won\'t change with a refinance. After your ' + nextMo +
+      ' 1st payment you should owe approximately $' + Math.round(bal).toLocaleString() +
+      ', and your home was valued at $' + Math.round(ov).toLocaleString() + ' at purchase.\n\n' +
       'Your home should now be worth about $' + Math.round(nv).toLocaleString() +
-      ', which brings your loan-to-value ratio down to ' + ltv + '%' +
-      (ltv < 70 ? ' — unlocking best-tier pricing' : '') + '.\n\n' +
-      'For a new ' + term + '-month fixed at ' + nr + '%, I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() +
-      (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit to cover fees' : '') +
-      '. Your new P&I payment would be $' + newPI + '/month — saving you $' + sav + '/month, or $' + annSav + '/year.\n\n' +
-      'On costs: closing costs are estimated at $' + Math.round(cc).toLocaleString() +
-      ' and escrows at closing are $' + Math.round(esc).toLocaleString() +
-      (lc > 0 ? ', offset by the $' + Math.round(lc).toLocaleString() +
-        ' lender credit — net cash to close is approximately $' + netCash.toLocaleString() : '.') + '.\n\n' +
-      'A quick note on escrows: that\'s your own money going into your new escrow account. ' +
-      'You\'ll receive your existing escrow balance back within 20 days of payoff — it\'s essentially a wash.\n\n' +
-      'We can also structure the loan so you have $0 due at closing by rolling in the escrow setup and skipping your next payment.\n\n' +
-      'To get started I just need:\n' +
-      '— Confirmation your income hasn\'t changed\n' +
-      '— Permission to pull your credit\n\n' +
-      'I\'ll have your application and disclosures over the same day. Any questions, just ask.\n\n' +
+      '. For a new ' + termDisp + ' fixed loan we can currently offer ' + nr + '%' +
+      (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit' : '') +
+      '. I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() +
+      (lc > 0 ? ' to roll in some closing costs and reduce your cash needed to close' : '') + '.\n\n' +
+      'For a ' + termDisp + ' fixed $' + Math.round(nl).toLocaleString() + ' loan at ' + nr +
+      '%, your new principal and interest payment would be $' + newPI +
+      '/month — saving you $' + sav + '/month, or $' + annSav + '/year. That\'s a significant improvement!\n\n' +
+      'We\'ll collect your taxes and insurance at closing to set up a new escrow account, but you\'ll get a ' +
+      'refund of your existing escrow balance within 20 days of payoff — so that\'s a wash. You\'d pay your ' +
+      curMo + ' payment on schedule (if you haven\'t already), bring your ' + nextMo +
+      ' payment and escrows to closing, receive your escrow refund within 20 days, and your new payment of $' +
+      newPI + '/month begins on ' + firstPayMo + ' 1st.' +
+      (cashDue > 0
+        ? ' With this structure, estimated cash at closing is ' + fm(cashDue) + '.\n\n'
+        : ' With this structure, you\'d actually receive ' + fm(cashAmt) + ' back at closing.\n\n') +
+      'I also have this rate available if you\'d prefer to roll in your new escrow and skip your next two ' +
+      'mortgage payments — still saving and taking advantage of that great rate with $0 due at closing. ' +
+      'Just let me know if you\'d prefer that structure.\n\n' +
+      'To move forward, I just need confirmation that your income hasn\'t changed and permission to run ' +
+      'your credit. I\'ll have your loan application and disclosures over to you the same day, along with a ' +
+      'short list of the documents we\'ll need for underwriting. We can typically close in about three weeks.\n\n' +
       'Thanks,\n' + agent;
 
   } else {
@@ -1006,7 +1022,7 @@ function ge() {
       'Even the highest rate below saves you $' + savNum.toFixed(2) + '/month ($' + annSav + '/year).\n\n' +
       optBlocks +
       insight +
-      'All three options carry the same escrow setup at closing — that\'s your own money going into your new escrow account, ' +
+      (numOpts === 2 ? 'Both options carry' : 'All three options carry') + ' the same escrow setup at closing — that\'s your own money going into your new escrow account, ' +
       'not a fee. Your existing escrow balance comes back to you within 20 days of payoff.\n\n' +
       'Happy to walk through any of these in detail. Just let me know which direction feels right and we\'ll get moving.\n\n' +
       'Thanks,\n' + agent;
