@@ -1,162 +1,338 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-.lb{font-family:var(--font-sans);max-width:960px;padding:1.5rem 0}
-.wordmark{font-size:22px;font-weight:500;color:var(--color-text-primary);letter-spacing:-0.03em;margin-bottom:6px}
-.wordmark span{color:var(--color-text-tertiary);font-weight:400}
-.tabs{display:flex;gap:2px;margin-bottom:1.5rem;border-bottom:0.5px solid var(--color-border-tertiary)}
-.tab{padding:8px 18px;font-size:13px;cursor:pointer;border:none;background:none;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;letter-spacing:0.01em}
-.tab.active{color:var(--color-text-primary);border-bottom:2px solid var(--color-text-primary);font-weight:500}
-.tab:hover:not(.active){color:var(--color-text-primary)}
+
+/* ── App shell ─────────────────────────────────────────────────────── */
+.app{font-family:var(--font-sans);max-width:1040px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-lg);overflow:hidden;display:flex;flex-direction:column}
+
+/* Titlebar */
+.app-titlebar{display:flex;align-items:center;gap:8px;padding:0 14px;height:34px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);flex-shrink:0}
+.app-icon{font-size:13px;opacity:.6}
+.app-name{font-size:13px;font-weight:600;color:var(--color-text-primary);letter-spacing:-0.02em}
+.app-desc{font-size:11px;color:var(--color-text-tertiary);padding-left:6px;border-left:0.5px solid var(--color-border-secondary)}
+.titlebar-spacer{flex:1}
+.app-pill{font-size:10px;padding:2px 8px;border-radius:99px;background:var(--color-background-tertiary);color:var(--color-text-tertiary);border:0.5px solid var(--color-border-tertiary);font-weight:500;letter-spacing:0.02em}
+
+/* Tab bar */
+.app-tabs{display:flex;align-items:stretch;padding:0 14px;background:var(--color-background-secondary);border-bottom:1px solid var(--color-border-tertiary);flex-shrink:0;gap:0}
+.tab{padding:0 16px;height:34px;font-size:12px;font-weight:500;cursor:pointer;border:none;background:none;color:var(--color-text-tertiary);border-bottom:2px solid transparent;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;letter-spacing:0.01em}
+.tab.active{color:var(--color-text-primary);border-bottom-color:var(--color-text-primary)}
+.tab:hover:not(.active){color:var(--color-text-secondary)}
+.tab-icon{font-size:11px;opacity:.7}
+
+/* Main scrollable area */
+.app-body{padding:16px;overflow-y:auto;flex:1}
 .panel{display:none}.panel.active{display:block}
-.sec{font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px}
-.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:1rem}
-.ctitle{font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:12px;padding-bottom:8px;border-bottom:0.5px solid var(--color-border-tertiary);text-transform:uppercase;letter-spacing:0.06em}
-.fg{display:grid;gap:10px;margin-bottom:10px}
+
+/* Status bar */
+.app-statusbar{display:flex;align-items:center;gap:0;padding:0;height:26px;background:var(--color-background-secondary);border-top:0.5px solid var(--color-border-tertiary);flex-shrink:0;font-size:11px;overflow:hidden}
+.sb-item{display:flex;align-items:center;gap:5px;padding:0 12px;height:100%;color:var(--color-text-tertiary);border-right:0.5px solid var(--color-border-tertiary);white-space:nowrap}
+.sb-item:first-child{border-left:none}
+.sb-dot{width:6px;height:6px;border-radius:50%;background:#1D9E75;flex-shrink:0}
+.sb-label{color:var(--color-text-tertiary)}
+.sb-val{color:var(--color-text-secondary);font-weight:500}
+.sb-val.ok{color:#0F6E56}
+.sb-spacer{flex:1}
+
+/* ── Typography helpers ─────────────────────────────────────────────── */
+.sec-label{font-size:10px;font-weight:600;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.09em;margin-bottom:8px}
+
+/* ── Cards ──────────────────────────────────────────────────────────── */
+.card{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:10px}
+.card:last-child{margin-bottom:0}
+.card-head{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary)}
+.card-title{font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.08em}
+.card-body{padding:12px}
+
+/* ── Form fields ────────────────────────────────────────────────────── */
+.fg{display:grid;gap:8px;margin-bottom:8px}
+.fg:last-child{margin-bottom:0}
 .fg2{grid-template-columns:1fr 1fr}
 .fg3{grid-template-columns:1fr 1fr 1fr}
-.fg4{grid-template-columns:1fr 1fr 1fr 1fr}
-.fg1{grid-template-columns:1fr}
+.fg4{grid-template-columns:repeat(4,1fr)}
 .f{display:flex;flex-direction:column;gap:3px}
-.f label{font-size:11px;color:var(--color-text-tertiary);letter-spacing:0.02em}
-.f input,.f select{font-size:13px;padding:6px 9px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);width:100%}
-.mcard{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 14px}
-.mcard .ml{font-size:11px;color:var(--color-text-secondary);margin-bottom:3px}
-.mcard .mv{font-size:19px;font-weight:500;color:var(--color-text-primary)}
-.mcard .ms{font-size:11px;color:var(--color-text-tertiary);margin-top:2px}
+.f label{font-size:10px;font-weight:500;color:var(--color-text-tertiary);letter-spacing:0.04em;text-transform:uppercase}
+.f input,.f select{font-size:13px;padding:6px 8px;border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);color:var(--color-text-primary);width:100%;font-family:inherit;font-variant-numeric:tabular-nums}
+.f input:focus,.f select:focus{outline:none;border-color:var(--color-border-info);background:var(--color-background-primary);box-shadow:0 0 0 2px color-mix(in srgb,var(--color-border-info) 15%,transparent)}
+.f select{cursor:pointer}
+
+/* ── Metrics ────────────────────────────────────────────────────────── */
+.metrics-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:10px}
+.mcard{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px 12px}
+.ml{font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px}
+.mv{font-size:18px;font-weight:600;color:var(--color-text-primary);font-variant-numeric:tabular-nums;line-height:1.1}
+.ms{font-size:11px;color:var(--color-text-tertiary);margin-top:3px;font-variant-numeric:tabular-nums}
 .mv.ok{color:#0F6E56}.mv.warn{color:#854F0B}.mv.bad{color:#A32D2D}
-.ltvbar{height:6px;border-radius:3px;background:var(--color-border-tertiary);margin:6px 0 2px;overflow:hidden}
-.ltvfill{height:100%;border-radius:3px;transition:width .3s}
-.insight{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:12px 16px;font-size:13px;line-height:1.65;color:var(--color-text-secondary);margin-bottom:1rem}
-.insight b{color:var(--color-text-primary);font-weight:500}
-.ctab-wrap{display:flex;gap:6px;margin-bottom:1rem;flex-wrap:wrap}
-.ctab{padding:6px 14px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:99px;cursor:pointer;background:none;color:var(--color-text-secondary)}
-.ctab.on{background:var(--color-text-primary);color:var(--color-background-primary);border-color:var(--color-text-primary)}
-.opt-grid{display:grid;gap:10px}
-.opt2{grid-template-columns:repeat(2,minmax(0,1fr))}
-.opt3{grid-template-columns:repeat(3,minmax(0,1fr))}
-.ocard{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1rem}
-.ocard.rec{border:2px solid var(--color-border-info)}
-.otitle{font-size:11px;font-weight:500;color:var(--color-text-secondary);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.06em;display:flex;align-items:center;gap:6px}
-.rbadge{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--color-background-info);color:var(--color-text-info);font-weight:400;text-transform:none;letter-spacing:0}
-.cmp-table{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
-.cmp-table th{font-size:11px;font-weight:500;color:var(--color-text-secondary);padding:7px 10px;text-align:left;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary)}
+
+/* ── Data table (LTV/cash) ──────────────────────────────────────────── */
+.dt{width:100%;font-size:12px;border-collapse:collapse}
+.dt td{padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-secondary);vertical-align:middle}
+.dt td:last-child{text-align:right;color:var(--color-text-primary);font-variant-numeric:tabular-nums}
+.dt tr:last-child td{border-bottom:none;font-weight:600;font-size:13px}
+.dt .cr{color:#0F6E56}
+
+/* LTV bar */
+.ltvbar{height:4px;border-radius:2px;background:var(--color-border-tertiary);margin:8px 0 3px;overflow:hidden}
+.ltvfill{height:100%;border-radius:2px;transition:width .3s ease}
+
+/* ── Insight ────────────────────────────────────────────────────────── */
+.insight{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-left:2px solid var(--color-border-info);border-radius:var(--border-radius-md);padding:10px 12px;font-size:12px;line-height:1.65;color:var(--color-text-secondary);margin-top:10px}
+.insight b{color:var(--color-text-primary);font-weight:600}
+
+/* ── Qualify layout: split ──────────────────────────────────────────── */
+.qualify-layout{display:grid;grid-template-columns:1fr 1.45fr;gap:10px;align-items:start}
+.qualify-results-inner{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+
+/* ── Toolbar (Option Builder) ───────────────────────────────────────── */
+.toolbar{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.toolbar-spacer{flex:1}
+.segment{display:inline-flex;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);padding:2px;gap:2px}
+.seg-btn{padding:4px 14px;font-size:12px;font-weight:500;border:none;background:none;border-radius:calc(var(--border-radius-md) - 2px);cursor:pointer;color:var(--color-text-secondary);font-family:inherit}
+.seg-btn.on{background:var(--color-background-primary);color:var(--color-text-primary);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.toolbar-label{font-size:11px;color:var(--color-text-tertiary)}
+
+/* ── Option cards ───────────────────────────────────────────────────── */
+.opt-grid{display:grid;gap:10px;margin-bottom:12px}
+.opt2{grid-template-columns:repeat(2,1fr)}
+.opt3{grid-template-columns:repeat(3,1fr)}
+.ocard{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden}
+.ocard.rec{border-color:var(--color-border-info);border-width:1px}
+.ocard-head{padding:8px 12px;background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);display:flex;align-items:center;justify-content:space-between}
+.otitle{font-size:10px;font-weight:600;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:0.08em}
+.rbadge{font-size:10px;padding:2px 7px;border-radius:99px;background:var(--color-background-info);color:var(--color-text-info);font-weight:500}
+.ocard-body{padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+
+/* ── Comparison table ───────────────────────────────────────────────── */
+.cmp-wrap{border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;margin-bottom:10px}
+.cmp-table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.cmp-table th{font-size:10px;font-weight:600;color:var(--color-text-secondary);padding:7px 12px;text-align:left;border-bottom:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);text-transform:uppercase;letter-spacing:0.07em}
 .cmp-table th.r{text-align:right}
-.cmp-table td{padding:9px 10px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle}
-.cmp-table td.r{text-align:right}
-.cmp-table td.win{color:#0F6E56;font-weight:500;text-align:right}
-.cmp-table td.lose{text-align:right;color:var(--color-text-secondary)}
-.cmp-table tr.gh td{font-size:10px;font-weight:500;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.07em;background:var(--color-background-secondary);padding:5px 10px;border-bottom:0.5px solid var(--color-border-tertiary)}
+.cmp-table td{padding:8px 12px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);vertical-align:middle;font-variant-numeric:tabular-nums}
+.cmp-table td.r{text-align:right;color:var(--color-text-secondary)}
+.cmp-table td.win{text-align:right;color:#0F6E56;font-weight:600}
+.cmp-table td.lose{text-align:right;color:var(--color-text-tertiary)}
+.cmp-table tr.gh td{font-size:10px;font-weight:600;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.08em;background:var(--color-background-secondary);padding:5px 12px}
 .cmp-table tr:last-child td{border-bottom:none}
-.btn{display:inline-flex;align-items:center;gap:5px;padding:7px 15px;font-size:12px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-primary)}
+.cmp-table tbody tr:hover td{background:var(--color-background-secondary)}
+
+/* ── Email layout: split ────────────────────────────────────────────── */
+.email-layout{display:grid;grid-template-columns:1fr 1.6fr;gap:10px;align-items:start}
+.email-preview-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.emailbox{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:14px;font-size:12.5px;line-height:1.75;color:var(--color-text-primary);white-space:pre-wrap;min-height:420px;font-family:inherit}
+
+/* ── Buttons ────────────────────────────────────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;font-size:12px;font-weight:500;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);cursor:pointer;background:var(--color-background-secondary);color:var(--color-text-primary);font-family:inherit;transition:background .1s}
 .btn:hover{background:var(--color-background-tertiary)}
-.emailbox{background:var(--color-background-secondary);border-radius:var(--border-radius-md);border:0.5px solid var(--color-border-tertiary);padding:1rem;font-size:13px;line-height:1.75;color:var(--color-text-primary);white-space:pre-wrap;min-height:200px;margin-top:10px}
-.step-row{display:flex;gap:12px;align-items:flex-start;margin-bottom:14px}
-.snum{width:24px;height:24px;border-radius:50%;background:var(--color-background-secondary);border:0.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:500;color:var(--color-text-secondary);flex-shrink:0;margin-top:2px}
-.sc h4{font-size:13px;font-weight:500;margin-bottom:2px}
-.sc p{font-size:12px;color:var(--color-text-secondary);line-height:1.5}
+.btn-sm{padding:3px 10px;font-size:11px}
+
+/* ── Checklist ──────────────────────────────────────────────────────── */
+.checklist-layout{display:grid;grid-template-columns:1.4fr 1fr;gap:10px;align-items:start}
+.step-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.step-row:last-child{border-bottom:none;padding-bottom:0}
+.snum{width:22px;height:22px;border-radius:50%;background:var(--color-background-tertiary);border:0.5px solid var(--color-border-secondary);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--color-text-tertiary);flex-shrink:0;margin-top:1px}
+.sc h4{font-size:13px;font-weight:600;color:var(--color-text-primary);margin-bottom:3px}
+.sc p{font-size:12px;color:var(--color-text-secondary);line-height:1.55}
 .chk{list-style:none}
-.chk li{display:flex;gap:8px;align-items:baseline;font-size:13px;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
+.chk li{display:flex;gap:8px;align-items:baseline;font-size:13px;padding:7px 0;border-bottom:0.5px solid var(--color-border-tertiary)}
 .chk li:last-child{border-bottom:none}
-.ck{color:#1D9E75;font-size:14px;flex-shrink:0}
+.ck{color:#1D9E75;font-size:12px;flex-shrink:0;font-weight:700}
 </style>
 
-<div class="lb">
-  <div class="wordmark">Lock<span>box</span></div>
-  <div style="font-size:12px;color:var(--color-text-tertiary);margin-bottom:1.25rem;letter-spacing:0.01em">mortgage workflow · from first email to lock</div>
+<div class="app">
 
-  <div class="tabs">
-    <button class="tab active" onclick="showTab('qualify',this)">Qualify & quote</button>
-    <button class="tab" onclick="showTab('compare',this)">Option builder</button>
-    <button class="tab" onclick="showTab('email',this)">Email generator</button>
-    <button class="tab" onclick="showTab('checklist',this)">Lock checklist</button>
+  <!-- Titlebar -->
+  <div class="app-titlebar">
+    <span class="app-icon">⬡</span>
+    <span class="app-name">Lockbox</span>
+    <span class="app-desc">mortgage workflow</span>
+    <div class="titlebar-spacer"></div>
+    <div class="app-pill" id="sb-summary">—</div>
   </div>
 
-  <!-- QUALIFY -->
-  <div class="panel active" id="panel-qualify">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
-      <div class="card" style="margin-bottom:0">
-        <div class="ctitle">Current loan</div>
-        <div class="fg fg2"><div class="f"><label>Original loan amount ($)</label><input type="number" id="q-ol" value="492000" oninput="cq()"></div><div class="f"><label>Original rate (%)</label><input type="number" id="q-or" value="7.375" step="0.125" oninput="cq()"></div></div>
-        <div class="fg fg2"><div class="f"><label>Current balance ($)</label><input type="number" id="q-bal" value="483000" oninput="cq()"></div><div class="f"><label>Home value at purchase ($)</label><input type="number" id="q-ov" value="625000" oninput="cq()"></div></div>
-        <div class="fg fg2"><div class="f"><label>Monthly taxes ($)</label><input type="number" id="q-tax" value="850" oninput="cq()"></div><div class="f"><label>Monthly insurance ($)</label><input type="number" id="q-ins" value="150" oninput="cq()"></div></div>
+  <!-- Tab bar -->
+  <div class="app-tabs">
+    <button class="tab active" onclick="showTab('qualify',this)"><span class="tab-icon">◎</span>Qualify &amp; quote</button>
+    <button class="tab" onclick="showTab('compare',this)"><span class="tab-icon">⇄</span>Option builder</button>
+    <button class="tab" onclick="showTab('email',this)"><span class="tab-icon">✉</span>Email generator</button>
+    <button class="tab" onclick="showTab('checklist',this)"><span class="tab-icon">☑</span>Lock checklist</button>
+  </div>
+
+  <!-- Body -->
+  <div class="app-body">
+
+    <!-- ── QUALIFY ───────────────────────────────────────────────── -->
+    <div class="panel active" id="panel-qualify">
+      <div class="qualify-layout">
+
+        <!-- Left: inputs -->
+        <div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">Current loan</span></div>
+            <div class="card-body">
+              <div class="fg fg2">
+                <div class="f"><label>Original amount ($)</label><input type="number" id="q-ol" value="492000" oninput="cq()"></div>
+                <div class="f"><label>Original rate (%)</label><input type="number" id="q-or" value="7.375" step="0.125" oninput="cq()"></div>
+              </div>
+              <div class="fg fg2">
+                <div class="f"><label>Current balance ($)</label><input type="number" id="q-bal" value="483000" oninput="cq()"></div>
+                <div class="f"><label>Home value at purchase ($)</label><input type="number" id="q-ov" value="625000" oninput="cq()"></div>
+              </div>
+              <div class="fg fg2">
+                <div class="f"><label>Monthly taxes ($)</label><input type="number" id="q-tax" value="850" oninput="cq()"></div>
+                <div class="f"><label>Monthly insurance ($)</label><input type="number" id="q-ins" value="150" oninput="cq()"></div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-head"><span class="card-title">New loan</span></div>
+            <div class="card-body">
+              <div class="fg fg2">
+                <div class="f"><label>New loan amount ($)</label><input type="number" id="q-nl" value="492100" oninput="cq()"></div>
+                <div class="f"><label>New rate (%)</label><input type="number" id="q-nr" value="6.375" step="0.125" oninput="cq()"></div>
+              </div>
+              <div class="fg fg2">
+                <div class="f"><label>Current home value ($)</label><input type="number" id="q-nv" value="695000" oninput="cq()"></div>
+                <div class="f"><label>Lender credit ($)</label><input type="number" id="q-lc" value="1295" oninput="cq()"></div>
+              </div>
+              <div class="fg fg2">
+                <div class="f"><label>Closing costs ($)</label><input type="number" id="q-cc" value="3840" oninput="cq()"></div>
+                <div class="f"><label>Escrows at closing ($)</label><input type="number" id="q-esc" value="6345" oninput="cq()"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: results -->
+        <div>
+          <div class="metrics-grid" id="q-metrics"></div>
+          <div class="qualify-results-inner">
+            <div class="card" style="margin-bottom:0"><div class="card-head"><span class="card-title">LTV</span></div><div class="card-body" id="q-ltv"></div></div>
+            <div class="card" style="margin-bottom:0"><div class="card-head"><span class="card-title">Cash to close</span></div><div class="card-body" id="q-cash"></div></div>
+          </div>
+          <div class="insight" id="q-insight"></div>
+        </div>
       </div>
-      <div class="card" style="margin-bottom:0">
-        <div class="ctitle">New loan</div>
-        <div class="fg fg2"><div class="f"><label>New loan amount ($)</label><input type="number" id="q-nl" value="492100" oninput="cq()"></div><div class="f"><label>New rate (%)</label><input type="number" id="q-nr" value="6.375" step="0.125" oninput="cq()"></div></div>
-        <div class="fg fg2"><div class="f"><label>Current home value ($)</label><input type="number" id="q-nv" value="695000" oninput="cq()"></div><div class="f"><label>Lender credit ($)</label><input type="number" id="q-lc" value="1295" oninput="cq()"></div></div>
-        <div class="fg fg2"><div class="f"><label>Closing costs ($)</label><input type="number" id="q-cc" value="3840" oninput="cq()"></div><div class="f"><label>Escrows at closing ($)</label><input type="number" id="q-esc" value="6345" oninput="cq()"></div></div>
+    </div>
+
+    <!-- ── COMPARE ───────────────────────────────────────────────── -->
+    <div class="panel" id="panel-compare">
+      <div class="toolbar">
+        <span class="toolbar-label">Options</span>
+        <div class="segment">
+          <button class="seg-btn on" id="ct2" onclick="setOpts(2)">2</button>
+          <button class="seg-btn" id="ct3" onclick="setOpts(3)">3</button>
+        </div>
+        <div class="toolbar-spacer"></div>
+      </div>
+      <div id="opt-inputs" class="opt-grid opt2"></div>
+      <div class="cmp-wrap"><table class="cmp-table" id="cmp-tbl"></table></div>
+      <div class="insight" id="cmp-insight"></div>
+    </div>
+
+    <!-- ── EMAIL ─────────────────────────────────────────────────── -->
+    <div class="panel" id="panel-email">
+      <div class="email-layout">
+        <!-- Left: fields -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><span class="card-title">Scenario inputs</span></div>
+          <div class="card-body">
+            <div class="fg fg2">
+              <div class="f"><label>Client name</label><input type="text" id="e-name" value="Olivia" oninput="ge()"></div>
+              <div class="f"><label>Purchase date</label><input type="text" id="e-date" value="April 2024" oninput="ge()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Original amount ($)</label><input type="number" id="e-ol" value="492000" oninput="ge()"></div>
+              <div class="f"><label>Original rate (%)</label><input type="number" id="e-or" value="7.375" step="0.125" oninput="ge()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Current balance ($)</label><input type="number" id="e-bal" value="483000" oninput="ge()"></div>
+              <div class="f"><label>Home value at purchase ($)</label><input type="number" id="e-ov" value="625000" oninput="ge()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>New home value ($)</label><input type="number" id="e-nv" value="695000" oninput="ge()"></div>
+              <div class="f"><label>New loan amount ($)</label><input type="number" id="e-nl" value="492100" oninput="ge()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>New rate (%)</label><input type="number" id="e-nr" value="6.375" step="0.125" oninput="ge()"></div>
+              <div class="f"><label>Lender credit ($)</label><input type="number" id="e-lc" value="1295" oninput="ge()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Closing costs ($)</label><input type="number" id="e-cc" value="3840" oninput="ge()"></div>
+              <div class="f"><label>Escrows at closing ($)</label><input type="number" id="e-esc" value="6345" oninput="ge()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Email type</label>
+                <select id="e-type" oninput="ge()">
+                  <option value="initial">Initial response</option>
+                  <option value="compete">Rate match / competitor</option>
+                  <option value="lock">Lock recommendation</option>
+                </select>
+              </div>
+              <div class="f"><label>Your name</label><input type="text" id="e-agent" value="Nick" oninput="ge()"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: preview -->
+        <div>
+          <div class="email-preview-head">
+            <span style="font-size:11px;color:var(--color-text-tertiary)">Edit before sending</span>
+            <button class="btn btn-sm" onclick="copyEmail(event)">Copy email</button>
+          </div>
+          <div class="emailbox" id="emailout" contenteditable="true"></div>
+        </div>
       </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:1rem" id="q-metrics"></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1rem">
-      <div class="card" style="margin-bottom:0"><div class="ctitle">LTV</div><div id="q-ltv"></div></div>
-      <div class="card" style="margin-bottom:0"><div class="ctitle">Cash to close</div><div id="q-cash"></div></div>
-    </div>
-    <div class="insight" id="q-insight"></div>
-  </div>
 
-  <!-- COMPARE -->
-  <div class="panel" id="panel-compare">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
-      <div class="ctab-wrap" style="margin-bottom:0">
-        <button class="ctab on" id="ct2" onclick="setOpts(2)">2 options</button>
-        <button class="ctab" id="ct3" onclick="setOpts(3)">3 options</button>
+    <!-- ── CHECKLIST ──────────────────────────────────────────────── -->
+    <div class="panel" id="panel-checklist">
+      <div class="checklist-layout">
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><span class="card-title">Lead to lock — sequence</span></div>
+          <div class="card-body">
+            <div class="step-row"><div class="snum">1</div><div class="sc"><h4>Same-day response with full scenario</h4><p>Current loan recap, new payment, LTV improvement, monthly savings, and the no-cash-due path — all in the first reply. Use the Email Generator tab.</p></div></div>
+            <div class="step-row"><div class="snum">2</div><div class="sc"><h4>Separate escrows from closing costs in every quote</h4><p>Escrows aren't a fee — they're the client's own money going into their new account. They get the old balance back within 20 days. Show this proactively so the gross number never lands as a shock.</p></div></div>
+            <div class="step-row"><div class="snum">3</div><div class="sc"><h4>Issue disclosures the same hour credit is authorized</h4><p>Don't let a business day pass between "yes, pull my credit" and the portal invite.</p></div></div>
+            <div class="step-row"><div class="snum">4</div><div class="sc"><h4>Proactively offer the no-cash-due structure</h4><p>Roll escrows, skip the next payment. Remove the biggest friction point before they bring it up.</p></div></div>
+            <div class="step-row"><div class="snum">5</div><div class="sc"><h4>Match any competitor quote immediately</h4><p>Never let a competitor offer sit overnight. Match the rate, then use breakeven math to reframe why your structure wins. See Option Builder.</p></div></div>
+            <div class="step-row"><div class="snum">6</div><div class="sc"><h4>Deliver the side-by-side table within the hour</h4><p>When a client asks to see both options, the comparison is what closes them. Use Option Builder → copy the table into your reply.</p></div></div>
+            <div class="step-row"><div class="snum">7</div><div class="sc"><h4>One ask per email — always end with a single next step</h4><p>Multiple asks = no action. Sign disclosures. Confirm income. Pick a rate. One thing per message.</p></div></div>
+            <div class="step-row"><div class="snum">8</div><div class="sc"><h4>Lock with a 15-day window, framed as protecting gains</h4><p>"We've already seen significant improvement — locking protects that." Urgency without pressure.</p></div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><span class="card-title">Pre-lock document checklist</span></div>
+          <div class="card-body" style="padding-top:4px;padding-bottom:4px">
+            <ul class="chk">
+              <li><span class="ck">✓</span>Credit authorization</li>
+              <li><span class="ck">✓</span>Income confirmed — W2s + paystubs (current year)</li>
+              <li><span class="ck">✓</span>Bank statements (60 days)</li>
+              <li><span class="ck">✓</span>Homeowners insurance declarations page</li>
+              <li><span class="ck">✓</span>Current mortgage statement / payoff amount</li>
+              <li><span class="ck">✓</span>Signed disclosure package</li>
+              <li><span class="ck">✓</span>Appraisal waiver confirmed or appraisal ordered</li>
+              <li><span class="ck">✓</span>Marital status and legal name confirmed</li>
+              <li><span class="ck">✓</span>HOA docs (if applicable)</li>
+              <li><span class="ck">✓</span>Loan submitted to underwriting</li>
+            </ul>
+          </div>
+        </div>
       </div>
     </div>
-    <div id="opt-inputs" class="opt-grid opt2" style="margin-bottom:1rem"></div>
-    <div class="card"><table class="cmp-table" id="cmp-tbl"></table></div>
-    <div class="insight" id="cmp-insight"></div>
+
+  </div><!-- /.app-body -->
+
+  <!-- Status bar -->
+  <div class="app-statusbar">
+    <div class="sb-item"><div class="sb-dot"></div><span class="sb-label">Ready</span></div>
+    <div class="sb-item"><span class="sb-label">Savings</span>&nbsp;<span class="sb-val ok" id="sb-savings">—</span></div>
+    <div class="sb-item"><span class="sb-label">LTV</span>&nbsp;<span class="sb-val" id="sb-ltv">—</span></div>
+    <div class="sb-item"><span class="sb-label">Net cash</span>&nbsp;<span class="sb-val" id="sb-net">—</span></div>
+    <div class="sb-item"><span class="sb-label">Breakeven</span>&nbsp;<span class="sb-val" id="sb-be">—</span></div>
+    <div class="sb-spacer"></div>
   </div>
 
-  <!-- EMAIL -->
-  <div class="panel" id="panel-email">
-    <div class="card">
-      <div class="fg fg2"><div class="f"><label>Client first name</label><input type="text" id="e-name" value="Olivia" oninput="ge()"></div><div class="f"><label>Purchase date</label><input type="text" id="e-date" value="April 2024" oninput="ge()"></div></div>
-      <div class="fg fg2"><div class="f"><label>Original loan amount ($)</label><input type="number" id="e-ol" value="492000" oninput="ge()"></div><div class="f"><label>Original rate (%)</label><input type="number" id="e-or" value="7.375" step="0.125" oninput="ge()"></div></div>
-      <div class="fg fg2"><div class="f"><label>Current balance ($)</label><input type="number" id="e-bal" value="483000" oninput="ge()"></div><div class="f"><label>Home value at purchase ($)</label><input type="number" id="e-ov" value="625000" oninput="ge()"></div></div>
-      <div class="fg fg2"><div class="f"><label>New home value ($)</label><input type="number" id="e-nv" value="695000" oninput="ge()"></div><div class="f"><label>New loan amount ($)</label><input type="number" id="e-nl" value="492100" oninput="ge()"></div></div>
-      <div class="fg fg2"><div class="f"><label>New rate (%)</label><input type="number" id="e-nr" value="6.375" step="0.125" oninput="ge()"></div><div class="f"><label>Lender credit ($)</label><input type="number" id="e-lc" value="1295" oninput="ge()"></div></div>
-      <div class="fg fg2"><div class="f"><label>Closing costs ($)</label><input type="number" id="e-cc" value="3840" oninput="ge()"></div><div class="f"><label>Escrows at closing ($)</label><input type="number" id="e-esc" value="6345" oninput="ge()"></div></div>
-      <div class="fg fg2"><div class="f"><label>Email type</label><select id="e-type" oninput="ge()"><option value="initial">Initial response</option><option value="compete">Rate match / competitor</option><option value="lock">Lock recommendation</option></select></div><div class="f"><label>Your name</label><input type="text" id="e-agent" value="Nick" oninput="ge()"></div></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <span style="font-size:11px;color:var(--color-text-tertiary)">Edit before sending</span>
-      <button class="btn" onclick="copyEmail(event)">Copy email</button>
-    </div>
-    <div class="emailbox" id="emailout" contenteditable="true"></div>
-  </div>
-
-  <!-- CHECKLIST -->
-  <div class="panel" id="panel-checklist">
-    <div class="card">
-      <div class="ctitle">Lead to lock — sequence</div>
-      <div class="step-row"><div class="snum">1</div><div class="sc"><h4>Same-day response with full scenario</h4><p>Current loan recap, new payment, LTV improvement, monthly savings, and the no-cash-due path — all in the first reply. Use the Email Generator tab.</p></div></div>
-      <div class="step-row"><div class="snum">2</div><div class="sc"><h4>Separate escrows from closing costs in every quote</h4><p>Escrows aren't a fee — they're the client's own money going into their new account. They get the old balance back within 20 days. Show this proactively so the gross number never lands as a shock.</p></div></div>
-      <div class="step-row"><div class="snum">3</div><div class="sc"><h4>Issue disclosures the same hour credit is authorized</h4><p>Don't let a business day pass between "yes, pull my credit" and the portal invite.</p></div></div>
-      <div class="step-row"><div class="snum">4</div><div class="sc"><h4>Proactively offer the no-cash-due structure</h4><p>Roll escrows, skip the next payment. Remove the biggest friction point before they bring it up.</p></div></div>
-      <div class="step-row"><div class="snum">5</div><div class="sc"><h4>Match any competitor quote immediately</h4><p>Never let a competitor offer sit overnight. Match the rate, then use breakeven math to reframe why your structure wins. See Option Builder.</p></div></div>
-      <div class="step-row"><div class="snum">6</div><div class="sc"><h4>Deliver the side-by-side table within the hour</h4><p>When a client asks to see both options, the comparison is what closes them. Use Option Builder → copy the table into your reply.</p></div></div>
-      <div class="step-row"><div class="snum">7</div><div class="sc"><h4>One ask per email — always end with a single next step</h4><p>Multiple asks = no action. Sign disclosures. Confirm income. Pick a rate. One thing per message.</p></div></div>
-      <div class="step-row"><div class="snum">8</div><div class="sc"><h4>Lock with a 15-day window, framed as protecting gains</h4><p>"We've already seen significant improvement — locking protects that." Urgency without pressure.</p></div></div>
-    </div>
-    <div class="card">
-      <div class="ctitle">Pre-lock document checklist</div>
-      <ul class="chk">
-        <li><span class="ck">✓</span>Credit authorization</li>
-        <li><span class="ck">✓</span>Income confirmed — W2s + paystubs (current year)</li>
-        <li><span class="ck">✓</span>Bank statements (60 days)</li>
-        <li><span class="ck">✓</span>Homeowners insurance declarations page</li>
-        <li><span class="ck">✓</span>Current mortgage statement / payoff amount</li>
-        <li><span class="ck">✓</span>Signed disclosure package</li>
-        <li><span class="ck">✓</span>Appraisal waiver confirmed or appraisal ordered</li>
-        <li><span class="ck">✓</span>Marital status and legal name confirmed</li>
-        <li><span class="ck">✓</span>HOA docs (if applicable)</li>
-        <li><span class="ck">✓</span>Loan submitted to underwriting</li>
-      </ul>
-    </div>
-  </div>
-</div>
+</div><!-- /.app -->
 
 <script>
 let numOpts = 2;
@@ -192,39 +368,50 @@ function cq() {
   const oldLTV = (ol / ov) * 100, newLTV = (nl / nv) * 100;
   const netCash = cc + esc - lc;
   const ltvColor = newLTV < 70 ? '#0F6E56' : newLTV < 80 ? '#854F0B' : '#A32D2D';
-  const ltvBar = newLTV < 70 ? '#1D9E75' : newLTV < 80 ? '#EF9F27' : '#E24B4A';
-  const ltvMsg = newLTV < 70 ? 'Under 70% — best pricing tier' : newLTV < 80 ? 'Under 80% — no PMI' : 'Over 80% — PMI may apply';
+  const ltvBar   = newLTV < 70 ? '#1D9E75' : newLTV < 80 ? '#EF9F27' : '#E24B4A';
+  const ltvMsg   = newLTV < 70 ? 'Under 70% — best pricing tier' : newLTV < 80 ? 'Under 80% — no PMI' : 'Over 80% — PMI may apply';
 
   document.getElementById('q-metrics').innerHTML =
-    '<div class="mcard"><div class="ml">Old P&I</div><div class="mv">' + fd(oldPI) + '</div><div class="ms">PITI: ' + fd(oldPI + tax + ins) + '</div></div>' +
-    '<div class="mcard"><div class="ml">New P&I</div><div class="mv">' + fd(newPI) + '</div><div class="ms">PITI: ' + fd(newPI + tax + ins) + '</div></div>' +
-    '<div class="mcard"><div class="ml">Monthly savings</div><div class="mv ok">' + fd(savPI) + '</div><div class="ms">' + fm(annSav) + ' per year</div></div>' +
-    '<div class="mcard"><div class="ml">Net cash to close</div><div class="mv ' + (netCash <= 0 ? 'ok' : netCash < 3000 ? 'warn' : 'bad') + '">' + fm(netCash) + '</div><div class="ms">' + (lc > 0 ? 'after ' + fm(lc) + ' credit' : 'no credit applied') + '</div></div>';
+    mcard('Old P&I', fd(oldPI), 'PITI: ' + fd(oldPI + tax + ins), '') +
+    mcard('New P&I', fd(newPI), 'PITI: ' + fd(newPI + tax + ins), '') +
+    mcard('Monthly savings', fd(savPI), fm(annSav) + ' per year', 'ok') +
+    mcard('Net cash to close', fm(netCash), lc > 0 ? 'after ' + fm(lc) + ' credit' : 'no credit applied', netCash <= 0 ? 'ok' : netCash < 3000 ? 'warn' : 'bad');
 
   document.getElementById('q-ltv').innerHTML =
-    '<table style="width:100%;font-size:13px;border-collapse:collapse">' +
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Home value at purchase</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(ov) + '</td></tr>' +
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Original LTV</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fp(oldLTV) + '</td></tr>' +
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Current home value</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(nv) + '</td></tr>' +
-    '<tr><td style="padding:5px 0;font-weight:500">New LTV</td><td style="text-align:right;padding:5px 0;font-weight:500;color:' + ltvColor + '">' + fp(newLTV) + '</td></tr>' +
+    '<table class="dt">' +
+    '<tr><td>Home value at purchase</td><td>' + fm(ov) + '</td></tr>' +
+    '<tr><td>Original LTV</td><td>' + fp(oldLTV) + '</td></tr>' +
+    '<tr><td>Current home value</td><td>' + fm(nv) + '</td></tr>' +
+    '<tr><td>New LTV</td><td style="color:' + ltvColor + '">' + fp(newLTV) + '</td></tr>' +
     '</table>' +
     '<div class="ltvbar"><div class="ltvfill" style="width:' + Math.min(100, newLTV) + '%;background:' + ltvBar + '"></div></div>' +
-    '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:3px">' + ltvMsg + '</p>';
+    '<p style="font-size:11px;color:var(--color-text-tertiary)">' + ltvMsg + '</p>';
 
   document.getElementById('q-cash').innerHTML =
-    '<table style="width:100%;font-size:13px;border-collapse:collapse">' +
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Closing costs</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(cc) + '</td></tr>' +
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Escrows and other costs</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(esc) + '</td></tr>' +
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Lender credit</td><td style="text-align:right;padding:5px 0;color:#0F6E56;border-bottom:0.5px solid var(--color-border-tertiary)">−' + fm(lc) + '</td></tr>' +
-    '<tr><td style="font-weight:500;padding:6px 0">Net cash to close</td><td style="text-align:right;padding:6px 0;font-weight:500;color:' + (netCash <= 0 ? '#0F6E56' : 'var(--color-text-primary)') + '">' + fm(netCash) + '</td></tr>' +
+    '<table class="dt">' +
+    '<tr><td>Closing costs</td><td>' + fm(cc) + '</td></tr>' +
+    '<tr><td>Escrows and other costs</td><td>' + fm(esc) + '</td></tr>' +
+    '<tr><td>Lender credit</td><td class="cr">−' + fm(lc) + '</td></tr>' +
+    '<tr><td>Net cash to close</td><td style="color:' + (netCash <= 0 ? '#0F6E56' : 'var(--color-text-primary)') + '">' + fm(netCash) + '</td></tr>' +
     '</table>' +
-    '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:5px">Escrows are your funds — existing balance returned within 20 days of payoff.</p>';
+    '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:6px">Escrows are your funds — existing balance returned within 20 days of payoff.</p>';
 
   const beMonths = (lc > 0 && savPI > 0) ? Math.round(lc / savPI) : null;
   const appx = nv - ov;
   document.getElementById('q-insight').innerHTML =
     'Savings of <b>' + fd(savPI) + '/mo</b> (' + fm(annSav) + '/yr). Home value up <b>' + fm(appx) + '</b> (' + fm(ov) + ' → ' + fm(nv) + '), dropping LTV from <b>' + fp(oldLTV) + ' → ' + fp(newLTV) + '</b>' + (newLTV < 70 ? ', unlocking best-tier pricing.' : '.') +
     (beMonths ? ' Lender credit delivers <b>' + fm(lc) + ' on day one</b> — the lower-rate alternative only wins after <b>' + beMonths + ' months</b>. Solid recommendation for any client likely to refi within 4 years.' : '');
+
+  // Status bar
+  document.getElementById('sb-savings').textContent = fd(savPI) + '/mo';
+  document.getElementById('sb-ltv').textContent = fp(newLTV);
+  document.getElementById('sb-net').textContent = fm(netCash);
+  document.getElementById('sb-be').textContent = beMonths ? beMonths + ' mo' : '—';
+  document.getElementById('sb-summary').textContent = fp(newLTV) + ' LTV · saves ' + fd(savPI) + '/mo';
+}
+
+function mcard(label, val, sub, cls) {
+  return '<div class="mcard"><div class="ml">' + label + '</div><div class="mv ' + cls + '">' + val + '</div><div class="ms">' + sub + '</div></div>';
 }
 
 function setOpts(n) {
@@ -240,28 +427,53 @@ function buildOptInputs() {
   let html = '';
   for (let i = 0; i < numOpts; i++) {
     const d = defaults[i];
-    html += '<div class="ocard"><div class="otitle">' + optLabels[i] + '</div>' +
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Rate (%)</label><input type="number" id="o' + i + 'r" value="' + d.rate + '" step="0.125" oninput="buildComparison()"></div></div>' +
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Monthly P&I payment ($)</label><input type="number" id="o' + i + 'pi" value="' + pmt(d.rate, 360, d.loan).toFixed(2) + '" step="0.01" oninput="buildComparison()"></div></div>' +
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Loan amount ($)</label><input type="number" id="o' + i + 'l" value="' + d.loan + '" oninput="buildComparison()"></div></div>' +
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Closing costs ($)</label><input type="number" id="o' + i + 'cc" value="' + d.cc + '" oninput="buildComparison()"></div></div>' +
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Escrows and other costs ($)</label><input type="number" id="o' + i + 'esc" value="' + d.esc + '" oninput="buildComparison()"></div></div>' +
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Lender credit / points ($)</label><input type="number" id="o' + i + 'lc" value="' + d.lc + '" oninput="buildComparison()"></div></div>' +
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Payoff amount ($)</label><input type="number" id="o' + i + 'po" value="' + d.payoff + '" oninput="buildComparison()"></div></div>' +
-    '</div>';
+    html += '<div class="ocard"><div class="ocard-head"><span class="otitle">' + optLabels[i] + '</span></div><div class="ocard-body">' +
+      field('Rate (%)', 'o'+i+'r', d.rate, 0.125, 'buildComparison()') +
+      field('Monthly P&I ($)', 'o'+i+'pi', pmt(d.rate,360,d.loan).toFixed(2), 0.01, 'buildComparison()') +
+      field('Loan amount ($)', 'o'+i+'l', d.loan, 1, 'buildComparison()') +
+      field('Closing costs ($)', 'o'+i+'cc', d.cc, 1, 'buildComparison()') +
+      field('Escrows and other costs ($)', 'o'+i+'esc', d.esc, 1, 'buildComparison()') +
+      field('Lender credit / points ($)', 'o'+i+'lc', d.lc, 1, 'buildComparison()') +
+      field('Payoff amount ($)', 'o'+i+'po', d.payoff, 1, 'buildComparison()') +
+      '</div></div>';
   }
   document.getElementById('opt-inputs').className = 'opt-grid ' + cls;
   document.getElementById('opt-inputs').innerHTML = html;
+  highlightRec();
+}
+
+function field(lbl, id, val, step, cb) {
+  return '<div class="f"><label>' + lbl + '</label><input type="number" id="' + id + '" value="' + val + '" step="' + step + '" oninput="' + cb + '"></div>';
+}
+
+function highlightRec() {
+  // highlight recommended card (highest lc)
+  let maxLc = -Infinity, recI = 0;
+  for (let i = 0; i < numOpts; i++) {
+    const lc = parseFloat(document.getElementById('o'+i+'lc')?.value) || 0;
+    if (lc > maxLc) { maxLc = lc; recI = i; }
+  }
+  document.querySelectorAll('.ocard').forEach((c, i) => {
+    c.classList.toggle('rec', i === recI && maxLc > 0);
+    const head = c.querySelector('.ocard-head');
+    const existing = head.querySelector('.rbadge');
+    if (i === recI && maxLc > 0) {
+      if (!existing) head.insertAdjacentHTML('beforeend', '<span class="rbadge">rec.</span>');
+    } else {
+      if (existing) existing.remove();
+    }
+  });
 }
 
 function ogv(i, key) { return parseFloat(document.getElementById('o' + i + key).value) || 0; }
 
 function buildComparison() {
+  highlightRec();
   const opts = [];
   for (let i = 0; i < numOpts; i++) {
     opts.push({
-      rate: ogv(i, 'r'), pi: ogv(i, 'pi'), loan: ogv(i, 'l'),
-      cc: ogv(i, 'cc'), esc: ogv(i, 'esc'), lc: ogv(i, 'lc'), payoff: ogv(i, 'po')
+      rate: ogv(i,'r'), pi: ogv(i,'pi'), loan: ogv(i,'l'),
+      cc: ogv(i,'cc'), esc: ogv(i,'esc'), lc: ogv(i,'lc'), payoff: ogv(i,'po')
     });
   }
   opts.forEach(o => {
@@ -281,16 +493,16 @@ function buildComparison() {
   ];
 
   const maxLc = Math.max(...opts.map(o => o.lc));
-  const recIdx = opts.indexOf(opts.reduce((a, b) => a.lc > b.lc ? a : b));
+  const recIdx = opts.reduce((best, o, i) => o.lc > opts[best].lc ? i : best, 0);
 
   const colW = Math.floor(65 / numOpts);
   let html = '<colgroup><col style="width:35%">';
   for (let i = 0; i < numOpts; i++) html += '<col style="width:' + colW + '%">';
-  html += '</colgroup><tr><th></th>';
+  html += '</colgroup><thead><tr><th></th>';
   for (let i = 0; i < numOpts; i++) {
-    html += '<th class="r">' + optLabels[i] + (i === recIdx && maxLc > 0 ? '<br><span class="rbadge">rec.</span>' : '') + ' </th>';
+    html += '<th class="r">' + optLabels[i] + (i === recIdx && maxLc > 0 ? ' <span class="rbadge">rec.</span>' : '') + '</th>';
   }
-  html += '</tr>';
+  html += '</tr></thead><tbody>';
 
   rows.forEach(row => {
     const vals = opts.map(o => o[row.key]);
@@ -304,11 +516,12 @@ function buildComparison() {
     });
     html += '</tr>';
   });
+  html += '</tbody>';
 
   document.getElementById('cmp-tbl').innerHTML = html;
 
   const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
-  const bestLc = opts.reduce((a, b) => a.lc > b.lc ? a : b);
+  const bestLc  = opts.reduce((a, b) => a.lc > b.lc ? a : b);
   let insight = '';
   if (bestLc.lc > 0 && bestLc !== bestPmt) {
     const pmtDiff = bestPmt.pi - bestLc.pi;
@@ -319,29 +532,20 @@ function buildComparison() {
 }
 
 function ge() {
-  const name = document.getElementById('e-name').value || 'Client';
+  const name  = document.getElementById('e-name').value  || 'Client';
   const agent = document.getElementById('e-agent').value || 'Nick';
-  const date = document.getElementById('e-date').value || '2024';
-  const ol = gv('e-ol') || 492000;
-  const or_ = gv('e-or') || 7.375;
-  const bal = gv('e-bal') || 483000;
-  const ov = gv('e-ov') || 625000;
-  const nv = gv('e-nv') || 695000;
-  const nl = gv('e-nl') || 492100;
-  const nr = gv('e-nr') || 6.375;
-  const lc = gv('e-lc');
-  const cc = gv('e-cc');
-  const esc = gv('e-esc');
+  const date  = document.getElementById('e-date').value  || '2024';
+  const ol  = gv('e-ol') || 492000, or_ = gv('e-or') || 7.375;
+  const bal = gv('e-bal') || 483000, ov  = gv('e-ov') || 625000;
+  const nv  = gv('e-nv') || 695000, nl  = gv('e-nl') || 492100;
+  const nr  = gv('e-nr') || 6.375,  lc  = gv('e-lc');
+  const cc  = gv('e-cc'), esc = gv('e-esc');
   const type = document.getElementById('e-type').value;
-  const oldPINum = pmt(or_, 360, ol);
-  const newPINum = pmt(nr, 360, nl);
+  const oldPINum = pmt(or_, 360, ol), newPINum = pmt(nr, 360, nl);
   const savNum = oldPINum - newPINum;
-  const oldPI = oldPINum.toFixed(2);
-  const newPI = newPINum.toFixed(2);
-  const sav = savNum.toFixed(2);
-  const annSav = Math.round(savNum * 12).toLocaleString();
-  const ltv = Math.round((nl / nv) * 100);
-  const netCash = Math.round(cc + esc - lc);
+  const oldPI = oldPINum.toFixed(2), newPI = newPINum.toFixed(2);
+  const sav = savNum.toFixed(2), annSav = Math.round(savNum * 12).toLocaleString();
+  const ltv = Math.round((nl / nv) * 100), netCash = Math.round(cc + esc - lc);
 
   let email = '';
   if (type === 'initial') {
