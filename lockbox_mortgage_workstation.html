@@ -122,7 +122,7 @@
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:11px;color:var(--color-text-tertiary)">Edit before sending</span>
-      <button class="btn" onclick="copyEmail()">Copy email</button>
+      <button class="btn" onclick="copyEmail(event)">Copy email</button>
     </div>
     <div class="emailbox" id="emailout" contenteditable="true"></div>
   </div>
@@ -159,204 +159,212 @@
 </div>
 
 <script>
-var numOpts = 2;
-var optLabels = ['Option A','Option B','Option C'];
-var defaults = [
-  {rate:6.375,loan:492100,cc:3840,esc:6345,lc:1295,payoff:483209},
-  {rate:6.25, loan:493900,cc:4336,esc:6345,lc:0,   payoff:483209},
-  {rate:6.125,loan:495700,cc:5200,esc:6345,lc:0,   payoff:483209}
+let numOpts = 2;
+const optLabels = ['Option A', 'Option B', 'Option C'];
+const defaults = [
+  {rate: 6.375, loan: 492100, cc: 3840, esc: 6345, lc: 1295, payoff: 483209},
+  {rate: 6.25,  loan: 493900, cc: 4336, esc: 6345, lc: 0,    payoff: 483209},
+  {rate: 6.125, loan: 495700, cc: 5200, esc: 6345, lc: 0,    payoff: 483209}
 ];
 
-function showTab(id,el){
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+function showTab(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   el.classList.add('active');
-  document.getElementById('panel-'+id).classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
 }
 
-function pmt(rate,nper,pv){var r=rate/12/100;if(r===0)return pv/nper;return pv*r/(1-Math.pow(1+r,-nper));}
-function fm(n){return '$'+Math.round(n).toLocaleString();}
-function fd(n){return '$'+parseFloat(n).toFixed(2);}
-function fp(n){return n.toFixed(1)+'%';}
-function gv(id){return parseFloat(document.getElementById(id).value)||0;}
+function pmt(rate, nper, pv) {
+  const r = rate / 12 / 100;
+  if (r === 0) return pv / nper;
+  return pv * r / (1 - Math.pow(1 + r, -nper));
+}
+function fm(n) { return '$' + Math.round(n).toLocaleString(); }
+function fd(n) { return '$' + Number(n).toFixed(2); }
+function fp(n) { return n.toFixed(1) + '%'; }
+function gv(id) { return parseFloat(document.getElementById(id).value) || 0; }
 
-function cq(){
-  var ol=gv('q-ol'),or_=gv('q-or'),bal=gv('q-bal'),ov=gv('q-ov'),tax=gv('q-tax'),ins=gv('q-ins');
-  var nl=gv('q-nl'),nr=gv('q-nr'),nv=gv('q-nv'),lc=gv('q-lc'),cc=gv('q-cc'),esc=gv('q-esc');
-  var oldPI=pmt(or_,360,ol),newPI=pmt(nr,360,nl);
-  var savPI=oldPI-newPI,annSav=savPI*12;
-  var oldLTV=(ol/ov)*100,newLTV=(nl/nv)*100;
-  var netCash=cc+esc-lc;
-  var ltvColor=newLTV<70?'#0F6E56':newLTV<80?'#854F0B':'#A32D2D';
-  var ltvBar=newLTV<70?'#1D9E75':newLTV<80?'#EF9F27':'#E24B4A';
-  var ltvMsg=newLTV<70?'Under 70% — best pricing tier':newLTV<80?'Under 80% — no PMI':'Over 80% — PMI may apply';
+function cq() {
+  const ol = gv('q-ol'), or_ = gv('q-or'), bal = gv('q-bal'), ov = gv('q-ov'), tax = gv('q-tax'), ins = gv('q-ins');
+  const nl = gv('q-nl'), nr = gv('q-nr'), nv = gv('q-nv'), lc = gv('q-lc'), cc = gv('q-cc'), esc = gv('q-esc');
+  const oldPI = pmt(or_, 360, ol), newPI = pmt(nr, 360, nl);
+  const savPI = oldPI - newPI, annSav = savPI * 12;
+  const oldLTV = (ol / ov) * 100, newLTV = (nl / nv) * 100;
+  const netCash = cc + esc - lc;
+  const ltvColor = newLTV < 70 ? '#0F6E56' : newLTV < 80 ? '#854F0B' : '#A32D2D';
+  const ltvBar = newLTV < 70 ? '#1D9E75' : newLTV < 80 ? '#EF9F27' : '#E24B4A';
+  const ltvMsg = newLTV < 70 ? 'Under 70% — best pricing tier' : newLTV < 80 ? 'Under 80% — no PMI' : 'Over 80% — PMI may apply';
 
-  document.getElementById('q-metrics').innerHTML=
-    '<div class="mcard"><div class="ml">Old P&I</div><div class="mv">'+fd(oldPI)+'</div><div class="ms">PITI: '+fd(oldPI+tax+ins)+'</div></div>'+
-    '<div class="mcard"><div class="ml">New P&I</div><div class="mv">'+fd(newPI)+'</div><div class="ms">PITI: '+fd(newPI+tax+ins)+'</div></div>'+
-    '<div class="mcard"><div class="ml">Monthly savings</div><div class="mv ok">'+fd(savPI)+'</div><div class="ms">'+fm(annSav)+' per year</div></div>'+
-    '<div class="mcard"><div class="ml">Net cash to close</div><div class="mv '+(netCash<=0?'ok':netCash<3000?'warn':'bad')+'">'+fm(netCash)+'</div><div class="ms">'+(lc>0?'after '+fm(lc)+' credit':'no credit applied')+'</div></div>';
+  document.getElementById('q-metrics').innerHTML =
+    '<div class="mcard"><div class="ml">Old P&I</div><div class="mv">' + fd(oldPI) + '</div><div class="ms">PITI: ' + fd(oldPI + tax + ins) + '</div></div>' +
+    '<div class="mcard"><div class="ml">New P&I</div><div class="mv">' + fd(newPI) + '</div><div class="ms">PITI: ' + fd(newPI + tax + ins) + '</div></div>' +
+    '<div class="mcard"><div class="ml">Monthly savings</div><div class="mv ok">' + fd(savPI) + '</div><div class="ms">' + fm(annSav) + ' per year</div></div>' +
+    '<div class="mcard"><div class="ml">Net cash to close</div><div class="mv ' + (netCash <= 0 ? 'ok' : netCash < 3000 ? 'warn' : 'bad') + '">' + fm(netCash) + '</div><div class="ms">' + (lc > 0 ? 'after ' + fm(lc) + ' credit' : 'no credit applied') + '</div></div>';
 
-  document.getElementById('q-ltv').innerHTML=
-    '<table style="width:100%;font-size:13px;border-collapse:collapse">'+
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Home value at purchase</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">'+fm(ov)+'</td></tr>'+
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Original LTV</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">'+fp(oldLTV)+'</td></tr>'+
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Current home value</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">'+fm(nv)+'</td></tr>'+
-    '<tr><td style="padding:5px 0;font-weight:500">New LTV</td><td style="text-align:right;padding:5px 0;font-weight:500;color:'+ltvColor+'">'+fp(newLTV)+'</td></tr>'+
-    '</table>'+
-    '<div class="ltvbar"><div class="ltvfill" style="width:'+Math.min(100,newLTV)+'%;background:'+ltvBar+'"></div></div>'+
-    '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:3px">'+ltvMsg+'</p>';
+  document.getElementById('q-ltv').innerHTML =
+    '<table style="width:100%;font-size:13px;border-collapse:collapse">' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Home value at purchase</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(ov) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Original LTV</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fp(oldLTV) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Current home value</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(nv) + '</td></tr>' +
+    '<tr><td style="padding:5px 0;font-weight:500">New LTV</td><td style="text-align:right;padding:5px 0;font-weight:500;color:' + ltvColor + '">' + fp(newLTV) + '</td></tr>' +
+    '</table>' +
+    '<div class="ltvbar"><div class="ltvfill" style="width:' + Math.min(100, newLTV) + '%;background:' + ltvBar + '"></div></div>' +
+    '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:3px">' + ltvMsg + '</p>';
 
-  document.getElementById('q-cash').innerHTML=
-    '<table style="width:100%;font-size:13px;border-collapse:collapse">'+
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Closing costs</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">'+fm(cc)+'</td></tr>'+
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Escrows and other costs</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">'+fm(esc)+'</td></tr>'+
-    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Lender credit</td><td style="text-align:right;padding:5px 0;color:#0F6E56;border-bottom:0.5px solid var(--color-border-tertiary)">−'+fm(lc)+'</td></tr>'+
-    '<tr><td style="font-weight:500;padding:6px 0">Net cash to close</td><td style="text-align:right;padding:6px 0;font-weight:500;color:'+(netCash<=0?'#0F6E56':'var(--color-text-primary)')+'">'+fm(netCash)+'</td></tr>'+
-    '</table>'+
+  document.getElementById('q-cash').innerHTML =
+    '<table style="width:100%;font-size:13px;border-collapse:collapse">' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Closing costs</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(cc) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Escrows and other costs</td><td style="text-align:right;padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">' + fm(esc) + '</td></tr>' +
+    '<tr><td style="color:var(--color-text-secondary);padding:5px 0;border-bottom:0.5px solid var(--color-border-tertiary)">Lender credit</td><td style="text-align:right;padding:5px 0;color:#0F6E56;border-bottom:0.5px solid var(--color-border-tertiary)">−' + fm(lc) + '</td></tr>' +
+    '<tr><td style="font-weight:500;padding:6px 0">Net cash to close</td><td style="text-align:right;padding:6px 0;font-weight:500;color:' + (netCash <= 0 ? '#0F6E56' : 'var(--color-text-primary)') + '">' + fm(netCash) + '</td></tr>' +
+    '</table>' +
     '<p style="font-size:11px;color:var(--color-text-tertiary);margin-top:5px">Escrows are your funds — existing balance returned within 20 days of payoff.</p>';
 
-  var beMonths=(lc>0&&savPI>0)?Math.round(lc/savPI):null;
-  var appx=nv-ov;
-  document.getElementById('q-insight').innerHTML=
-    'Savings of <b>'+fd(savPI)+'/mo</b> ('+fm(annSav)+'/yr). Home value up <b>'+fm(appx)+'</b> ('+fm(ov)+' → '+fm(nv)+'), dropping LTV from <b>'+fp(oldLTV)+' → '+fp(newLTV)+'</b>'+(newLTV<70?', unlocking best-tier pricing.':'.')+
-    (beMonths?' Lender credit delivers <b>'+fm(lc)+' on day one</b> — the lower-rate alternative only wins after <b>'+beMonths+' months</b>. Solid recommendation for any client likely to refi within 4 years.':'');
+  const beMonths = (lc > 0 && savPI > 0) ? Math.round(lc / savPI) : null;
+  const appx = nv - ov;
+  document.getElementById('q-insight').innerHTML =
+    'Savings of <b>' + fd(savPI) + '/mo</b> (' + fm(annSav) + '/yr). Home value up <b>' + fm(appx) + '</b> (' + fm(ov) + ' → ' + fm(nv) + '), dropping LTV from <b>' + fp(oldLTV) + ' → ' + fp(newLTV) + '</b>' + (newLTV < 70 ? ', unlocking best-tier pricing.' : '.') +
+    (beMonths ? ' Lender credit delivers <b>' + fm(lc) + ' on day one</b> — the lower-rate alternative only wins after <b>' + beMonths + ' months</b>. Solid recommendation for any client likely to refi within 4 years.' : '');
 }
 
-function setOpts(n){
-  numOpts=n;
-  document.getElementById('ct2').className='ctab'+(n===2?' on':'');
-  document.getElementById('ct3').className='ctab'+(n===3?' on':'');
+function setOpts(n) {
+  numOpts = n;
+  document.getElementById('ct2').classList.toggle('on', n === 2);
+  document.getElementById('ct3').classList.toggle('on', n === 3);
   buildOptInputs();
-  cc();
+  buildComparison();
 }
 
-function buildOptInputs(){
-  var cls=numOpts===2?'opt2':'opt3';
-  var html='';
-  for(var i=0;i<numOpts;i++){
-    var d=defaults[i];
-    html+='<div class="ocard"><div class="otitle">'+optLabels[i]+'</div>'+
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Rate (%)</label><input type="number" id="o'+i+'r" value="'+d.rate+'" step="0.125" oninput="cc()"></div></div>'+
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Monthly P&I payment ($)</label><input type="number" id="o'+i+'pi" value="'+pmt(d.rate,360,d.loan).toFixed(2)+'" step="0.01" oninput="cc()"></div></div>'+
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Loan amount ($)</label><input type="number" id="o'+i+'l" value="'+d.loan+'" oninput="cc()"></div></div>'+
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Closing costs ($)</label><input type="number" id="o'+i+'cc" value="'+d.cc+'" oninput="cc()"></div></div>'+
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Escrows and other costs ($)</label><input type="number" id="o'+i+'esc" value="'+d.esc+'" oninput="cc()"></div></div>'+
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Lender credit / points ($)</label><input type="number" id="o'+i+'lc" value="'+d.lc+'" oninput="cc()"></div></div>'+
-      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Payoff amount ($)</label><input type="number" id="o'+i+'po" value="'+d.payoff+'" oninput="cc()"></div></div>'+
+function buildOptInputs() {
+  const cls = numOpts === 2 ? 'opt2' : 'opt3';
+  let html = '';
+  for (let i = 0; i < numOpts; i++) {
+    const d = defaults[i];
+    html += '<div class="ocard"><div class="otitle">' + optLabels[i] + '</div>' +
+      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Rate (%)</label><input type="number" id="o' + i + 'r" value="' + d.rate + '" step="0.125" oninput="buildComparison()"></div></div>' +
+      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Monthly P&I payment ($)</label><input type="number" id="o' + i + 'pi" value="' + pmt(d.rate, 360, d.loan).toFixed(2) + '" step="0.01" oninput="buildComparison()"></div></div>' +
+      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Loan amount ($)</label><input type="number" id="o' + i + 'l" value="' + d.loan + '" oninput="buildComparison()"></div></div>' +
+      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Closing costs ($)</label><input type="number" id="o' + i + 'cc" value="' + d.cc + '" oninput="buildComparison()"></div></div>' +
+      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Escrows and other costs ($)</label><input type="number" id="o' + i + 'esc" value="' + d.esc + '" oninput="buildComparison()"></div></div>' +
+      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Lender credit / points ($)</label><input type="number" id="o' + i + 'lc" value="' + d.lc + '" oninput="buildComparison()"></div></div>' +
+      '<div class="fg fg1" style="margin-bottom:8px"><div class="f"><label>Payoff amount ($)</label><input type="number" id="o' + i + 'po" value="' + d.payoff + '" oninput="buildComparison()"></div></div>' +
     '</div>';
   }
-  document.getElementById('opt-inputs').className='opt-grid '+cls;
-  document.getElementById('opt-inputs').innerHTML=html;
+  document.getElementById('opt-inputs').className = 'opt-grid ' + cls;
+  document.getElementById('opt-inputs').innerHTML = html;
 }
 
-function ogv(i,key){return parseFloat(document.getElementById('o'+i+key).value)||0;}
+function ogv(i, key) { return parseFloat(document.getElementById('o' + i + key).value) || 0; }
 
-function cc(){
-  var opts=[];
-  for(var i=0;i<numOpts;i++){
+function buildComparison() {
+  const opts = [];
+  for (let i = 0; i < numOpts; i++) {
     opts.push({
-      rate:ogv(i,'r'),pi:ogv(i,'pi'),loan:ogv(i,'l'),
-      cc:ogv(i,'cc'),esc:ogv(i,'esc'),lc:ogv(i,'lc'),payoff:ogv(i,'po')
+      rate: ogv(i, 'r'), pi: ogv(i, 'pi'), loan: ogv(i, 'l'),
+      cc: ogv(i, 'cc'), esc: ogv(i, 'esc'), lc: ogv(i, 'lc'), payoff: ogv(i, 'po')
     });
   }
-  opts.forEach(function(o){
-    o.cashRec=o.loan-o.payoff;
-    o.netCost=o.cc+o.esc-o.lc;
+  opts.forEach(o => {
+    o.cashRec = o.loan - o.payoff;
+    o.netCost = o.cc + o.esc - o.lc;
   });
 
-  var rows=[
-    {label:'Rate',key:'rate',fmt:function(v){return v+'%'},lowerBetter:true},
-    {label:'Monthly P&I payment',key:'pi',fmt:fd,lowerBetter:true},
-    {label:'Loan amount',key:'loan',fmt:fm,lowerBetter:true},
-    {label:'Closing costs',key:'cc',fmt:fm,lowerBetter:true},
-    {label:'Escrows and other costs',key:'esc',fmt:fm,lowerBetter:true},
-    {label:'Lender credit / points',key:'lc',fmt:function(v){return v>0?fm(v):'—'},lowerBetter:false},
-    {label:'Payoff amount',key:'payoff',fmt:fm,lowerBetter:true},
-    {label:'Cash received / owed at closing',key:'cashRec',fmt:function(v){return v>=0?fm(v):'('+fm(Math.abs(v))+' owed)'},lowerBetter:false}
+  const rows = [
+    {label: 'Rate', key: 'rate', fmt: v => v + '%', lowerBetter: true},
+    {label: 'Monthly P&I payment', key: 'pi', fmt: fd, lowerBetter: true},
+    {label: 'Loan amount', key: 'loan', fmt: fm, lowerBetter: true},
+    {label: 'Closing costs', key: 'cc', fmt: fm, lowerBetter: true},
+    {label: 'Escrows and other costs', key: 'esc', fmt: fm, lowerBetter: true},
+    {label: 'Lender credit / points', key: 'lc', fmt: v => v > 0 ? fm(v) : '—', lowerBetter: false},
+    {label: 'Payoff amount', key: 'payoff', fmt: fm, lowerBetter: true},
+    {label: 'Cash received / owed at closing', key: 'cashRec', fmt: v => v >= 0 ? fm(v) : '(' + fm(Math.abs(v)) + ' owed)', lowerBetter: false}
   ];
 
-  var maxLc=Math.max.apply(null,opts.map(function(o){return o.lc;}));
-  var recIdx=opts.indexOf(opts.reduce(function(a,b){return a.lc>b.lc?a:b;}));
+  const maxLc = Math.max(...opts.map(o => o.lc));
+  const recIdx = opts.indexOf(opts.reduce((a, b) => a.lc > b.lc ? a : b));
 
-  var colW=Math.floor(65/numOpts);
-  var html='<colgroup><col style="width:35%">';
-  for(var i=0;i<numOpts;i++) html+='<col style="width:'+colW+'%">';
-  html+='</colgroup><tr><th></th>';
-  for(var i=0;i<numOpts;i++){
-    html+='<th class="r">'+optLabels[i]+(i===recIdx&&maxLc>0?'<br><span class="rbadge">rec.</span>':'')+' </th>';
+  const colW = Math.floor(65 / numOpts);
+  let html = '<colgroup><col style="width:35%">';
+  for (let i = 0; i < numOpts; i++) html += '<col style="width:' + colW + '%">';
+  html += '</colgroup><tr><th></th>';
+  for (let i = 0; i < numOpts; i++) {
+    html += '<th class="r">' + optLabels[i] + (i === recIdx && maxLc > 0 ? '<br><span class="rbadge">rec.</span>' : '') + ' </th>';
   }
-  html+='</tr>';
+  html += '</tr>';
 
-  rows.forEach(function(row){
-    var vals=opts.map(function(o){return o[row.key];});
-    var best=row.lowerBetter?Math.min.apply(null,vals):Math.max.apply(null,vals);
-    html+='<tr><td style="color:var(--color-text-secondary)">'+row.label+'</td>';
-    opts.forEach(function(o,i){
-      var v=o[row.key];
-      var isBest=(v===best);
-      var isNA=(row.key==='lc'&&v===0);
-      html+='<td class="'+(isNA?'r':isBest?'win':'lose')+'">'+row.fmt(v)+'</td>';
+  rows.forEach(row => {
+    const vals = opts.map(o => o[row.key]);
+    const best = row.lowerBetter ? Math.min(...vals) : Math.max(...vals);
+    html += '<tr><td style="color:var(--color-text-secondary)">' + row.label + '</td>';
+    opts.forEach(o => {
+      const v = o[row.key];
+      const isNA = (row.key === 'lc' && v === 0);
+      const isBest = (v === best);
+      html += '<td class="' + (isNA ? 'r' : isBest ? 'win' : 'lose') + '">' + row.fmt(v) + '</td>';
     });
-    html+='</tr>';
+    html += '</tr>';
   });
 
-  document.getElementById('cmp-tbl').innerHTML=html;
+  document.getElementById('cmp-tbl').innerHTML = html;
 
-  var bestPmt=opts.reduce(function(a,b){return a.pi<b.pi?a:b;});
-  var bestLc=opts.reduce(function(a,b){return a.lc>b.lc?a:b;});
-  var insight='';
-  if(bestLc.lc>0&&bestLc!==bestPmt){
-    var pmtDiff=bestPmt.pi-bestLc.pi;
-    var be=pmtDiff>0?Math.round(bestLc.lc/pmtDiff):null;
-    insight='<b>'+optLabels[opts.indexOf(bestLc)]+'</b> delivers <b>'+fm(bestLc.lc)+' in hand on day one</b>. The lower-payment option only wins after <b>'+(be?be+' months ('+( be/12).toFixed(1)+' yrs)':'—')+'</b> — well beyond a typical refi window for most clients.';
+  const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
+  const bestLc = opts.reduce((a, b) => a.lc > b.lc ? a : b);
+  let insight = '';
+  if (bestLc.lc > 0 && bestLc !== bestPmt) {
+    const pmtDiff = bestPmt.pi - bestLc.pi;
+    const be = pmtDiff > 0 ? Math.round(bestLc.lc / pmtDiff) : null;
+    insight = '<b>' + optLabels[opts.indexOf(bestLc)] + '</b> delivers <b>' + fm(bestLc.lc) + ' in hand on day one</b>. The lower-payment option only wins after <b>' + (be ? be + ' months (' + (be / 12).toFixed(1) + ' yrs)' : '—') + '</b> — well beyond a typical refi window for most clients.';
   }
-  document.getElementById('cmp-insight').innerHTML=insight;
+  document.getElementById('cmp-insight').innerHTML = insight;
 }
 
-function ge(){
-  var name=document.getElementById('e-name').value||'Client';
-  var agent=document.getElementById('e-agent').value||'Nick';
-  var date=document.getElementById('e-date').value||'2024';
-  var ol=parseFloat(document.getElementById('e-ol').value)||492000;
-  var or_=parseFloat(document.getElementById('e-or').value)||7.375;
-  var bal=parseFloat(document.getElementById('e-bal').value)||483000;
-  var ov=parseFloat(document.getElementById('e-ov').value)||625000;
-  var nv=parseFloat(document.getElementById('e-nv').value)||695000;
-  var nl=parseFloat(document.getElementById('e-nl').value)||492100;
-  var nr=parseFloat(document.getElementById('e-nr').value)||6.375;
-  var lc=parseFloat(document.getElementById('e-lc').value)||0;
-  var cc=parseFloat(document.getElementById('e-cc').value)||0;
-  var esc=parseFloat(document.getElementById('e-esc').value)||0;
-  var type=document.getElementById('e-type').value;
-  var oldPI=pmt(or_,360,ol).toFixed(2);
-  var newPI=pmt(nr,360,nl).toFixed(2);
-  var sav=(oldPI-newPI).toFixed(2);
-  var annSav=Math.round(sav*12).toLocaleString();
-  var ltv=Math.round((nl/nv)*100);
-  var netCash=Math.round(cc+esc-lc);
+function ge() {
+  const name = document.getElementById('e-name').value || 'Client';
+  const agent = document.getElementById('e-agent').value || 'Nick';
+  const date = document.getElementById('e-date').value || '2024';
+  const ol = gv('e-ol') || 492000;
+  const or_ = gv('e-or') || 7.375;
+  const bal = gv('e-bal') || 483000;
+  const ov = gv('e-ov') || 625000;
+  const nv = gv('e-nv') || 695000;
+  const nl = gv('e-nl') || 492100;
+  const nr = gv('e-nr') || 6.375;
+  const lc = gv('e-lc');
+  const cc = gv('e-cc');
+  const esc = gv('e-esc');
+  const type = document.getElementById('e-type').value;
+  const oldPINum = pmt(or_, 360, ol);
+  const newPINum = pmt(nr, 360, nl);
+  const savNum = oldPINum - newPINum;
+  const oldPI = oldPINum.toFixed(2);
+  const newPI = newPINum.toFixed(2);
+  const sav = savNum.toFixed(2);
+  const annSav = Math.round(savNum * 12).toLocaleString();
+  const ltv = Math.round((nl / nv) * 100);
+  const netCash = Math.round(cc + esc - lc);
 
-  var email='';
-  if(type==='initial'){
-    email='Hi '+name+',\n\nGreat to hear from you — there\'s a real opportunity here right now.\n\nWhen you purchased your home in '+date+', we put you in a 30-year fixed at '+or_+'% for $'+Math.round(ol).toLocaleString()+'. Your principal and interest payment was $'+oldPI+'/month (taxes and insurance won\'t change with a refinance). After your most recent payment you owe approximately $'+Math.round(bal).toLocaleString()+'. Your home was valued at $'+Math.round(ov).toLocaleString()+' at purchase.\n\nYour home should now be worth about $'+Math.round(nv).toLocaleString()+', which brings your loan-to-value ratio down to '+ltv+'%'+(ltv<70?' — unlocking best-tier pricing':'')+'.\n\nFor a new 30-year fixed at '+nr+'%, I\'d suggest a loan amount of $'+Math.round(nl).toLocaleString()+(lc>0?' with a $'+Math.round(lc).toLocaleString()+' lender credit to cover fees':'')+'. Your new P&I payment would be $'+newPI+'/month — saving you $'+sav+'/month, or $'+annSav+'/year.\n\nOn costs: closing costs are estimated at $'+Math.round(cc).toLocaleString()+' and escrows at closing are $'+Math.round(esc).toLocaleString()+(lc>0?', offset by the $'+Math.round(lc).toLocaleString()+' lender credit — net cash to close is approximately $'+netCash.toLocaleString():'.')+'.\n\nA quick note on escrows: that\'s your own money going into your new escrow account. You\'ll receive your existing escrow balance back within 20 days of payoff — it\'s essentially a wash.\n\nWe can also structure the loan so you have $0 due at closing by rolling in the escrow setup and skipping your next payment.\n\nTo get started I just need:\n— Confirmation your income hasn\'t changed\n— Permission to pull your credit\n\nI\'ll have your application and disclosures over the same day. Any questions, just ask.\n\nThanks,\n'+agent;
-  } else if(type==='compete'){
-    email='Hi '+name+',\n\nAbsolutely — we can match that for you. Happy to offer '+nr+'% with no points and $0 due at closing.\n\nHere\'s the quick comparison:\n\n  '+nr+'% with '+fm(lc)+' lender credit: cash in your pocket on day one, payment $'+newPI+'/mo\n  '+nr+'% no credit: same rate, same payment, no day-one benefit\n\nThe credit puts real money in your hands immediately. The no-credit version only wins if you never refinance again — which is unlikely given where rates are heading. Breakeven is well beyond a typical refi cycle.\n\nReady to lock? Just say the word and we\'ll handle the paperwork today.\n\nThanks,\n'+agent;
+  let email = '';
+  if (type === 'initial') {
+    email = 'Hi ' + name + ',\n\nGreat to hear from you — there\'s a real opportunity here right now.\n\nWhen you purchased your home in ' + date + ', we put you in a 30-year fixed at ' + or_ + '% for $' + Math.round(ol).toLocaleString() + '. Your principal and interest payment was $' + oldPI + '/month (taxes and insurance won\'t change with a refinance). After your most recent payment you owe approximately $' + Math.round(bal).toLocaleString() + '. Your home was valued at $' + Math.round(ov).toLocaleString() + ' at purchase.\n\nYour home should now be worth about $' + Math.round(nv).toLocaleString() + ', which brings your loan-to-value ratio down to ' + ltv + '%' + (ltv < 70 ? ' — unlocking best-tier pricing' : '') + '.\n\nFor a new 30-year fixed at ' + nr + '%, I\'d suggest a loan amount of $' + Math.round(nl).toLocaleString() + (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit to cover fees' : '') + '. Your new P&I payment would be $' + newPI + '/month — saving you $' + sav + '/month, or $' + annSav + '/year.\n\nOn costs: closing costs are estimated at $' + Math.round(cc).toLocaleString() + ' and escrows at closing are $' + Math.round(esc).toLocaleString() + (lc > 0 ? ', offset by the $' + Math.round(lc).toLocaleString() + ' lender credit — net cash to close is approximately $' + netCash.toLocaleString() : '.') + '.\n\nA quick note on escrows: that\'s your own money going into your new escrow account. You\'ll receive your existing escrow balance back within 20 days of payoff — it\'s essentially a wash.\n\nWe can also structure the loan so you have $0 due at closing by rolling in the escrow setup and skipping your next payment.\n\nTo get started I just need:\n— Confirmation your income hasn\'t changed\n— Permission to pull your credit\n\nI\'ll have your application and disclosures over the same day. Any questions, just ask.\n\nThanks,\n' + agent;
+  } else if (type === 'compete') {
+    email = 'Hi ' + name + ',\n\nAbsolutely — we can match that for you. Happy to offer ' + nr + '% with no points and $0 due at closing.\n\nHere\'s the quick comparison:\n\n  ' + nr + '% with ' + fm(lc) + ' lender credit: cash in your pocket on day one, payment $' + newPI + '/mo\n  ' + nr + '% no credit: same rate, same payment, no day-one benefit\n\nThe credit puts real money in your hands immediately. The no-credit version only wins if you never refinance again — which is unlikely given where rates are heading. Breakeven is well beyond a typical refi cycle.\n\nReady to lock? Just say the word and we\'ll handle the paperwork today.\n\nThanks,\n' + agent;
   } else {
-    email='Hi '+name+',\n\nMarket conditions are favorable right now and I recommend locking in your rate today.\n\nWe can lock at '+nr+'%'+(lc>0?' with a $'+Math.round(lc).toLocaleString()+' lender credit':'')+' for a 15-day window — more than enough time to close. Your new P&I payment would be $'+newPI+'/month, saving $'+sav+'/month ($'+annSav+'/year).\n\nWe\'ve seen significant improvement since we started. Locking now protects those gains. Just reply confirming you\'d like to proceed and we\'ll lock today.\n\nThanks,\n'+agent;
+    email = 'Hi ' + name + ',\n\nMarket conditions are favorable right now and I recommend locking in your rate today.\n\nWe can lock at ' + nr + '%' + (lc > 0 ? ' with a $' + Math.round(lc).toLocaleString() + ' lender credit' : '') + ' for a 15-day window — more than enough time to close. Your new P&I payment would be $' + newPI + '/month, saving $' + sav + '/month ($' + annSav + '/year).\n\nWe\'ve seen significant improvement since we started. Locking now protects those gains. Just reply confirming you\'d like to proceed and we\'ll lock today.\n\nThanks,\n' + agent;
   }
-  document.getElementById('emailout').innerText=email;
+  document.getElementById('emailout').innerText = email;
 }
 
-function copyEmail(){
-  var t=document.getElementById('emailout').innerText;
-  navigator.clipboard.writeText(t).then(function(){
-    var b=event.target;b.innerText='Copied!';
-    setTimeout(function(){b.innerText='Copy email';},2000);
+function copyEmail(event) {
+  const t = document.getElementById('emailout').innerText;
+  navigator.clipboard.writeText(t).then(function() {
+    const b = event.target;
+    b.innerText = 'Copied!';
+    setTimeout(function() { b.innerText = 'Copy email'; }, 2000);
   });
 }
 
 cq();
 buildOptInputs();
-cc();
+buildComparison();
 ge();
 </script>
