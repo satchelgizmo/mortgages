@@ -369,6 +369,7 @@ body {
   outline: none; border-color: var(--c-accent);
   box-shadow: 0 0 0 3px rgba(37,99,235,.14);
 }
+.emailbox.html-mode { white-space: normal; }
 
 /* ── Buttons ────────────────────────────────────────────────────────── */
 .btn {
@@ -1118,65 +1119,87 @@ function ge() {
       o.ccTotal = o.cc + o.pts;
     });
 
-    // Build tab-separated table (tabs align in email clients and paste destinations)
-    const T = '\t';
-    const tLine = (label, vals) => label + T + vals.join(T) + '\n';
-
-    const optTable =
-      tLine('', opts.map(o => o.label)) +
-      tLine('Rate', opts.map(o => o.rate + '%')) +
-      tLine('Monthly Principal and Interest', opts.map(o => fd(o.pi))) +
-      tLine('Monthly Savings vs. Current', opts.map(o => o.savings > 0 ? fd(o.savings) + '/mo' : '$0.00')) +
-      tLine('Loan Amount', opts.map(o => fd(o.loan))) +
-      tLine('Estimated Closing Costs + Origination', opts.map(o => fd(o.ccTotal))) +
-      tLine('Estimated Escrows and Other Costs', opts.map(o => fd(o.esc))) +
-      tLine('Lender Credit', opts.map(o => fd(o.lc))) +
-      tLine('Estimated Payoff Amount', opts.map(o => fd(o.payoff))) +
-      tLine('Cash at Closing', opts.map(o => {
-        const cd = Math.abs(o.cashDue);
-        return o.cashDue <= 0 ? fd(cd) + ' received' : fd(cd) + ' due';
-      }));
-
-    // Savings vs current for the lowest-payment option
+    // Breakeven insight
     const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
-    const savNum  = oldPINum - bestPmt.pi;
-    const annSav  = fm(Math.round(savNum * 12));
-
-    // Breakeven insight if a lender-credit option exists alongside a lower-payment one
-    const bestLc = opts.reduce((a, b) => a.lc > b.lc ? a : b);
-    let insight = '';
+    const bestLc  = opts.reduce((a, b) => a.lc > b.lc ? a : b);
+    let insightTxt = '';
     if (bestLc.lc > 0 && bestLc !== bestPmt) {
       const diff = bestLc.pi - bestPmt.pi;
       const be   = diff > 0 ? Math.round((bestPmt.pts + bestLc.lc) / diff) : null;
-      insight =
+      insightTxt =
         bestLc.label + ' gives you ' + fd(bestLc.lc) + ' back at closing through the lender credit, reducing your cash needed on day one. ' +
-        bestPmt.label + '\'s lower rate costs an extra ' + fd(diff) + '/month, and you wouldn\'t break even on that difference for ' +
+        bestPmt.label + '\'s lower rate costs an extra ' + fd(diff) + '/month, and you would not break even on that difference for ' +
         (be ? be + ' months (' + (be / 12).toFixed(1) + ' years)' : 'a very long time') +
-        '. Given a typical refinance horizon, the option with the credit tends to serve most borrowers better.\n\n';
+        '. Given a typical refinance horizon, the option with the credit tends to serve most borrowers better.';
     }
 
-    email =
-      'Hi ' + name + ',\n\n' +
-      'The table below illustrates the pertinent details and differences between the ' +
-      (numOpts === 2 ? 'two' : numOpts === 3 ? 'three' : numOpts) +
-      ' options. Please keep in mind that these are still estimates subject to change, but they should be very close to the actual closing figures.\n\n' +
-      optTable + '\n' +
-      insight +
-      (numOpts === 2 ? 'Both options' : 'All options') + ' include the same escrow setup at closing. That is your own money going into your new escrow account, not a fee. Your existing escrow balance comes back to you within 20 days of payoff.\n\n' +
-      'I hope this helps. Please let me know which option you prefer and we will handle the rest.\n\n' +
-      'Thanks,\n' + agent;
+    // Build HTML email with proper table (renders correctly when pasted into Gmail/Outlook)
+    const numWords = numOpts === 2 ? 'two' : numOpts === 3 ? 'three' : numOpts;
+    const S  = 'font-family:Inter,-apple-system,BlinkMacSystemFont,sans-serif;font-size:13.5px;';
+    const th = S + 'padding:8px 14px;border:1px solid #CBD5E1;background:#F8FAFC;font-weight:600;text-align:center;color:#0F172A;white-space:nowrap;';
+    const td = S + 'padding:7px 14px;border:1px solid #E2E8F0;color:#334155;';
+    const tv = S + 'padding:7px 14px;border:1px solid #E2E8F0;color:#0F172A;text-align:right;white-space:nowrap;';
+    const p  = t => '<p style="' + S + 'margin:0 0 14px;line-height:1.7;color:#0F172A">' + t + '</p>';
+
+    const tableRows = [
+      ['Rate',                              opts.map(o => o.rate + '%')],
+      ['Monthly Principal and Interest',    opts.map(o => fd(o.pi))],
+      ['Monthly Savings vs. Current',       opts.map(o => o.savings > 0 ? fd(o.savings) + '/mo' : '$0.00')],
+      ['Loan Amount',                       opts.map(o => fd(o.loan))],
+      ['Estimated Closing Costs + Origination', opts.map(o => fd(o.ccTotal))],
+      ['Estimated Escrows and Other Costs', opts.map(o => fd(o.esc))],
+      ['Lender Credit',                     opts.map(o => fd(o.lc))],
+      ['Estimated Payoff Amount',           opts.map(o => fd(o.payoff))],
+      ['Cash at Closing',                   opts.map(o => { const cd = Math.abs(o.cashDue); return o.cashDue <= 0 ? fd(cd) + ' received' : fd(cd) + ' due'; })]
+    ];
+
+    const tbl =
+      '<table style="border-collapse:collapse;margin:14px 0">' +
+      '<thead><tr>' +
+        '<th style="' + th + 'text-align:left"></th>' +
+        opts.map(o => '<th style="' + th + '">' + o.label + '</th>').join('') +
+      '</tr></thead><tbody>' +
+      tableRows.map(([label, vals]) =>
+        '<tr><td style="' + td + '">' + label + '</td>' +
+        vals.map(v => '<td style="' + tv + '">' + v + '</td>').join('') +
+        '</tr>'
+      ).join('') +
+      '</tbody></table>';
+
+    const htmlEmail =
+      p('Hi ' + name + ',') +
+      p('The table below illustrates the pertinent details and differences between the ' + numWords +
+        ' options. Please keep in mind that these are still estimates subject to change, but they should be very close to the actual closing figures.') +
+      tbl +
+      (insightTxt ? p(insightTxt) : '') +
+      p((numOpts === 2 ? 'Both options' : 'All options') + ' include the same escrow setup at closing. That is your own money going into your new escrow account, not a fee. Your existing escrow balance comes back to you within 20 days of payoff.') +
+      p('I hope this helps. Please let me know which option you prefer and we will handle the rest.') +
+      p('Thanks,<br>' + agent);
+
+    document.getElementById('emailout').classList.add('html-mode');
+    document.getElementById('emailout').innerHTML = htmlEmail;
+    return;
   }
 
+  document.getElementById('emailout').classList.remove('html-mode');
   document.getElementById('emailout').innerText = email;
 }
 
 function copyEmail(event) {
-  const text = document.getElementById('emailout').innerText;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = event.target;
-    btn.innerText = 'Copied!';
-    setTimeout(() => { btn.innerText = 'Copy email'; }, 2000);
-  });
+  const box = document.getElementById('emailout');
+  const btn = event.target;
+  const done = () => { btn.innerText = 'Copied!'; setTimeout(() => { btn.innerText = 'Copy email'; }, 2000); };
+  if (box.classList.contains('html-mode')) {
+    // Copy as HTML so it pastes as a formatted table in Gmail/Outlook
+    try {
+      const blob = new Blob([box.innerHTML], {type: 'text/html'});
+      navigator.clipboard.write([new ClipboardItem({'text/html': blob})]).then(done);
+    } catch(e) {
+      navigator.clipboard.writeText(box.innerText).then(done);
+    }
+  } else {
+    navigator.clipboard.writeText(box.innerText).then(done);
+  }
 }
 
 // ── Saved scenarios ────────────────────────────────────────────────────
