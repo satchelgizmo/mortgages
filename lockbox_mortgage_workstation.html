@@ -591,6 +591,9 @@ body {
           <button class="seg-btn on" id="ct2" onclick="setOpts(2)">2</button>
           <button class="seg-btn"    id="ct3" onclick="setOpts(3)">3</button>
         </div>
+        <span class="toolbar-label" style="margin-left:8px">Payoff ($)</span>
+        <input type="number" id="opt-payoff" value="483209" step="1" oninput="buildComparison()"
+               style="width:108px;font-size:12.5px;padding:3px 8px;border:1px solid var(--c-border);border-radius:var(--r-md);font-family:var(--font);color:var(--c-text);background:var(--c-bg)">
         <div class="toolbar-spacer"></div>
       </div>
       <div id="opt-inputs" class="opt-grid opt2"></div>
@@ -749,6 +752,9 @@ function showTab(id, el) {
 function cq() {
   const ol  = gv('q-ol'),  or_  = gv('q-or'),  ov  = gv('q-ov'), tax = gv('q-tax'), ins = gv('q-ins');
   const bal = gv('q-bal');
+  // Keep shared payoff in option builder in sync with qualify tab
+  const poEl = document.getElementById('opt-payoff');
+  if (poEl && bal > 0) poEl.value = bal;
   const nl  = gv('q-nl'),  nr   = gv('q-nr'),  nv  = gv('q-nv');
   const term = gv('q-term') || 360;
   const lc  = gv('q-lc'),  cc   = gv('q-cc'),  esc = gv('q-esc');
@@ -850,7 +856,6 @@ function buildOptInputs() {
       numField('Points ($)',                    'o'+i+'pts', d.pts,     1) +
       numField('Escrows / prepaids ($)',        'o'+i+'esc', d.esc,     1) +
       numField('Lender credit ($)',             'o'+i+'lc',  d.lc,      1) +
-      numField('Payoff amount ($)',             'o'+i+'po',  d.payoff,  1) +
       '<div class="opt-blurb" id="o'+i+'blurb"></div>' +
       '</div></div>';
   }
@@ -876,7 +881,8 @@ function buildComparison() {
 }
 
 function _doBuildComparison() {
-  const currentPI = pmt(gv('q-or'), 360, gv('q-ol'));
+  const currentPI    = pmt(gv('q-or'), 360, gv('q-ol'));
+  const sharedPayoff = gv('opt-payoff');
 
   const opts = [];
   for (let i = 0; i < numOpts; i++) {
@@ -888,7 +894,7 @@ function _doBuildComparison() {
       pts:    ogv(i,'pts'),
       esc:    ogv(i,'esc'),
       lc:     ogv(i,'lc'),
-      payoff: ogv(i,'po')
+      payoff: sharedPayoff
     };
     o.pi      = pmt(o.rate, o.term, o.loan);
     o.ccTotal = o.cc + o.pts;
@@ -1090,7 +1096,7 @@ function ge() {
         cc:     ogv(i, 'cc'),
         pts:    ogv(i, 'pts'),
         esc:    ogv(i, 'esc'),
-        payoff: ogv(i, 'po')
+        payoff: gv('opt-payoff')
       };
       o.pi      = pmt(o.rate, o.term, o.loan);
       o.cashDue = o.payoff + o.cc + o.pts + o.esc - o.loan - o.lc;
@@ -1122,15 +1128,21 @@ function ge() {
     // Breakeven insight
     const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
     const bestLc  = opts.reduce((a, b) => a.lc > b.lc ? a : b);
-    let insightTxt = '';
+    const allWord = numOpts === 2 ? 'Both' : 'All';
+    let insightP1 = '';
+    let insightP2 =
+      'That said, ' + allWord.toLowerCase() + ' scenarios accomplish your goals of lowering your rate as much as possible while borrowing as little as necessary to have no cash due at closing. ' +
+      'It is just a matter of choosing between a slightly larger loan amount with a lower payment or a smaller loan amount with a slightly higher payment. ' +
+      'You can\'t really go wrong either way, but the option with the credit gives you a little more leverage to take advantage of the market. ' +
+      bestPmt.label + ' only proves best if you never refinance again (which is unlikely).';
     if (bestLc.lc > 0 && bestLc !== bestPmt) {
       const diff = bestLc.pi - bestPmt.pi;
       const be   = diff > 0 ? Math.round((bestPmt.pts + bestLc.lc) / diff) : null;
-      insightTxt =
-        bestLc.label + ' gives you ' + fd(bestLc.lc) + ' back at closing through the lender credit, reducing your cash needed on day one. ' +
-        bestPmt.label + '\'s lower rate costs an extra ' + fd(diff) + '/month, and you would not break even on that difference for ' +
+      insightP1 =
+        bestLc.label + ' gives you ' + fd(bestLc.lc) + ' back at closing through the lender credit but costs an extra ' + fd(diff) +
+        '/month compared to ' + bestPmt.label + '\'s lower rate. You would not break even on that difference for ' +
         (be ? be + ' months (' + (be / 12).toFixed(1) + ' years)' : 'a very long time') +
-        '. Given a typical refinance horizon, the option with the credit tends to serve most borrowers better.';
+        ', so taking the credit now is probably the best move considering you should have another refinance opportunity (or two) within that time frame.';
     }
 
     // Build HTML email with proper table (renders correctly when pasted into Gmail/Outlook)
@@ -1171,7 +1183,8 @@ function ge() {
       p('The table below illustrates the pertinent details and differences between the ' + numWords +
         ' options. Please keep in mind that these are still estimates subject to change, but they should be very close to the actual closing figures.') +
       tbl +
-      (insightTxt ? p(insightTxt) : '') +
+      (insightP1 ? p(insightP1) : '') +
+      p(insightP2) +
       p((numOpts === 2 ? 'Both options' : 'All options') + ' include the same escrow setup at closing. That is your own money going into your new escrow account, not a fee. Your existing escrow balance comes back to you within 20 days of payoff.') +
       p('I hope this helps. Please let me know which option you prefer and we will handle the rest.') +
       p('Thanks,<br>' + agent);
@@ -1224,10 +1237,11 @@ function saveScenario() {
       nl, nr, term, lc: gv('q-lc'), cc: gv('q-cc'), esc: gv('q-esc')
     },
     numOpts, recIdx,
+    optPayoff: gv('opt-payoff'),
     opts: Array.from({length: numOpts}, (_, i) => ({
       r: ogv(i,'r'), t: ogv(i,'t'), l: ogv(i,'l'),
       cc: ogv(i,'cc'), pts: ogv(i,'pts'), esc: ogv(i,'esc'),
-      lc: ogv(i,'lc'), po: ogv(i,'po')
+      lc: ogv(i,'lc')
     })),
     email: {
       name: document.getElementById('e-name').value,
@@ -1291,11 +1305,12 @@ function restoreScenario(id) {
   document.getElementById('ct2').classList.toggle('on', numOpts === 2);
   document.getElementById('ct3').classList.toggle('on', numOpts === 3);
   buildOptInputs();
+  if (s.optPayoff) sv('opt-payoff', s.optPayoff);
   (s.opts || []).forEach((o, i) => {
     if (i >= numOpts) return;
     sv('o'+i+'r',   o.r);   sv('o'+i+'t',   o.t);   sv('o'+i+'l',   o.l);
     sv('o'+i+'cc',  o.cc);  sv('o'+i+'pts', o.pts); sv('o'+i+'esc', o.esc);
-    sv('o'+i+'lc',  o.lc);  sv('o'+i+'po',  o.po);
+    sv('o'+i+'lc',  o.lc);
   });
   if (s.email) {
     sv('e-name', s.email.name);
