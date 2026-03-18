@@ -431,6 +431,43 @@ body {
   .qualify-results-inner { grid-template-columns: 1fr; }
   .opt2, .opt3 { grid-template-columns: 1fr; }
 }
+
+/* ── Saved scenarios ─────────────────────────────────────────────────── */
+.sc-empty { font-size: 13.5px; color: var(--c-text3); padding: 32px 0; text-align: center; }
+.sc-card {
+  background: var(--c-bg);
+  border: 1px solid var(--c-border2);
+  border-radius: var(--r-lg);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.05);
+}
+.sc-card:last-child { margin-bottom: 0; }
+.sc-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.sc-name {
+  flex: 1; font-size: 14px; font-weight: 600; color: var(--c-text);
+  border: none; background: transparent; padding: 2px 4px; margin: -2px -4px;
+  border-radius: var(--r-md); font-family: var(--font);
+}
+.sc-name:focus { outline: none; background: var(--c-bg2); box-shadow: 0 0 0 2px rgba(37,99,235,.18); }
+.sc-date { font-size: 11.5px; color: var(--c-text3); white-space: nowrap; flex-shrink: 0; }
+.sc-meta {
+  display: flex; gap: 16px; font-size: 12.5px; color: var(--c-text3);
+  margin-bottom: 10px; flex-wrap: wrap;
+}
+.sc-meta b { color: var(--c-text2); font-weight: 600; }
+.sc-meta .ok { color: var(--c-ok); font-weight: 600; }
+.sc-actions { display: flex; gap: 8px; }
+.sc-del { color: var(--c-bad) !important; border-color: #FECACA !important; }
+.sc-del:hover { background: #FEF2F2 !important; }
+.save-btn {
+  font-size: 12px; padding: 4px 12px; border-radius: 99px;
+  background: rgba(255,255,255,.12); color: #F1F5F9;
+  border: 1px solid rgba(255,255,255,.18); font-weight: 500;
+  cursor: pointer; font-family: var(--font);
+  transition: background .1s;
+}
+.save-btn:hover { background: rgba(255,255,255,.2); }
 </style>
 </head>
 <body>
@@ -443,6 +480,7 @@ body {
     <span class="app-name">Lockbox</span>
     <span class="app-desc">mortgage workflow</span>
     <div class="titlebar-spacer"></div>
+    <button class="save-btn" id="save-btn" onclick="saveScenario()">⬇ Save scenario</button>
   </div>
 
   <!-- Tab bar -->
@@ -451,6 +489,7 @@ body {
     <button class="tab" onclick="showTab('compare',this)"><span class="tab-icon">⇄</span>Option builder</button>
     <button class="tab" onclick="showTab('email',this)"><span class="tab-icon">✉</span>Email generator</button>
     <button class="tab" onclick="showTab('checklist',this)"><span class="tab-icon">☑</span>Lock checklist</button>
+    <button class="tab" onclick="showTab('saved',this)"><span class="tab-icon">◈</span>Saved scenarios</button>
   </div>
 
   <!-- Body -->
@@ -529,7 +568,11 @@ body {
       </div>
       <div id="opt-inputs" class="opt-grid opt2"></div>
       <div class="cmp-wrap"><table class="cmp-table" id="cmp-tbl"></table></div>
-      <div class="insight" id="cmp-insight"></div>
+    </div>
+
+    <!-- ── SAVED SCENARIOS ───────────────────────────────────────────── -->
+    <div class="panel" id="panel-saved">
+      <div id="scenarios-list"></div>
     </div>
 
     <!-- ── EMAIL ─────────────────────────────────────────────────────── -->
@@ -660,6 +703,7 @@ function showTab(id, el) {
   el.classList.add('active');
   document.getElementById('panel-' + id).classList.add('active');
   if (id === 'email') ge();
+  if (id === 'saved') renderScenarios();
 }
 
 // ── Qualify & quote ────────────────────────────────────────────────────
@@ -824,8 +868,8 @@ function _doBuildComparison() {
   if (recIdx >= numOpts) recIdx = 0;
 
   // Update card borders, rec-buttons, and generate blurbs
-  const lowestPI   = Math.min(...opts.map(o => o.pi));
-  const highestLC  = Math.max(...opts.map(o => o.lc));
+  const highestLC   = Math.max(...opts.map(o => o.lc));
+  const lowestPIopt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
 
   document.querySelectorAll('.ocard').forEach((card, i) => {
     card.classList.toggle('rec', i === recIdx);
@@ -836,20 +880,28 @@ function _doBuildComparison() {
   opts.forEach((o, i) => {
     const blurb = document.getElementById('o' + i + 'blurb');
     if (!blurb) return;
-    const isLowest   = o.pi === lowestPI;
-    const isHighestLC = o.lc === highestLC && o.lc > 0;
+    const isLowest = o === lowestPIopt;
     let text = '';
-    if (isLowest && isHighestLC) {
-      text = 'Best of both: lowest payment and most cash at closing. Strong choice regardless of how long you plan to stay.';
-    } else if (isLowest) {
-      text = 'Lowest monthly payment. Saves ' + fd(o.savings) + '/mo vs. your current loan. Best long-term value if you stay in the home.';
-    } else if (isHighestLC) {
-      const pmtDiff = o.pi - lowestPI;
-      text = 'Most cash upfront: ' + fm(o.lc) + ' lender credit. Payment is ' + fd(pmtDiff) + '/mo more than the lowest rate option — see breakeven below.';
+    if (isLowest) {
+      // Lowest rate: no breakeven — focus on savings and closing costs
+      text = 'Lowest rate at ' + o.rate + '%. Saves ' + fd(o.savings) + '/mo vs. your current loan (' +
+             fm(Math.round(o.savings * 12)) + '/yr). ' +
+             'Closing costs + origination: ' + fm(o.ccTotal) + '.';
     } else {
-      const pmtAboveLowest = o.pi - lowestPI;
-      text = (o.lc > 0 ? fm(o.lc) + ' lender credit with a mid-range rate. ' : 'Middle option. ') +
-             'Payment is ' + fd(pmtAboveLowest) + '/mo above the lowest option, saving ' + fd(o.savings) + '/mo vs. your current loan.';
+      const pmtDiff = o.pi - lowestPIopt.pi;
+      const be = pmtDiff > 0
+        ? Math.round((lowestPIopt.pts + o.lc) / pmtDiff)
+        : null;
+      if (o.lc > 0) {
+        text = fm(o.lc) + ' lender credit offsets closing costs. ' +
+               'Payment is ' + fd(pmtDiff) + '/mo more than the lowest rate. ' +
+               (be ? 'Breakeven vs. ' + lowestPIopt.rate + '%: ' + be + ' months (' + (be / 12).toFixed(1) + ' yrs).'
+                   : 'Payment is already competitive with the lender credit advantage.');
+      } else {
+        text = 'Rate of ' + o.rate + '%. Saves ' + fd(o.savings) + '/mo vs. current loan. ' +
+               'Payment is ' + fd(pmtDiff) + '/mo above the lowest rate option. ' +
+               'Closing costs + origination: ' + fm(o.ccTotal) + '.';
+      }
     }
     blurb.textContent = text;
   });
@@ -894,22 +946,6 @@ function _doBuildComparison() {
   });
   html += '</tbody>';
   document.getElementById('cmp-tbl').innerHTML = html;
-
-  // Breakeven insight — belongs on this tab
-  const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
-  const bestLc  = opts.reduce((a, b) => a.lc > b.lc ? a : b);
-  let insight = '';
-  if (bestLc.lc > 0 && bestLc !== bestPmt) {
-    const diff = bestLc.pi - bestPmt.pi;  // extra cost per month for the lender-credit option
-    // Breakeven = (points paid for lower rate + lender credit given up) / monthly payment difference
-    const be   = diff > 0 ? Math.round((bestPmt.pts + bestLc.lc) / diff) : null;
-    insight = '<b>' + optLabels[opts.indexOf(bestLc)] + '</b> puts <b>' + fm(bestLc.lc) +
-              ' in the borrower\'s pocket on day one</b>. ' +
-              'The lower-payment option only comes out ahead after <b>' +
-              (be ? be + ' months (' + (be / 12).toFixed(1) + ' yrs)' : 'a very long time') +
-              '</b>, well beyond the typical refi horizon.';
-  }
-  document.getElementById('cmp-insight').innerHTML = insight;
 
   ge();
 }
@@ -1098,10 +1134,134 @@ function copyEmail(event) {
   });
 }
 
+// ── Saved scenarios ────────────────────────────────────────────────────
+function getScenarios() {
+  try { return JSON.parse(localStorage.getItem('lockbox_scenarios')) || []; }
+  catch (e) { return []; }
+}
+
+function saveScenario() {
+  const nr = gv('q-nr'), nl = gv('q-nl'), term = gv('q-term') || 360;
+  const savPI = pmt(gv('q-or'), 360, gv('q-ol')) - pmt(nr, term, nl);
+  const scenarios = getScenarios();
+  const scenario = {
+    id: Date.now(),
+    name: nr + '% refi — saves ' + fd(savPI) + '/mo',
+    created: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}),
+    q: {
+      ol: gv('q-ol'), or_: gv('q-or'), bal: gv('q-bal'), ov: gv('q-ov'),
+      nv: gv('q-nv'), tax: gv('q-tax'), ins: gv('q-ins'),
+      nl, nr, term, lc: gv('q-lc'), cc: gv('q-cc'), esc: gv('q-esc')
+    },
+    numOpts, recIdx,
+    opts: Array.from({length: numOpts}, (_, i) => ({
+      r: ogv(i,'r'), t: ogv(i,'t'), l: ogv(i,'l'),
+      cc: ogv(i,'cc'), pts: ogv(i,'pts'), esc: ogv(i,'esc'),
+      lc: ogv(i,'lc'), po: ogv(i,'po')
+    })),
+    email: {
+      name: document.getElementById('e-name').value,
+      date: document.getElementById('e-date').value,
+      agent: document.getElementById('e-agent').value
+    }
+  };
+  scenarios.unshift(scenario);
+  localStorage.setItem('lockbox_scenarios', JSON.stringify(scenarios));
+  renderScenarios();
+  const btn = document.getElementById('save-btn');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Saved';
+  setTimeout(() => { btn.textContent = orig; }, 1800);
+}
+
+function deleteScenario(id) {
+  const updated = getScenarios().filter(s => s.id !== id);
+  localStorage.setItem('lockbox_scenarios', JSON.stringify(updated));
+  renderScenarios();
+}
+
+function renameScenario(id, name) {
+  const scenarios = getScenarios();
+  const s = scenarios.find(x => x.id === id);
+  if (s) {
+    s.name = name;
+    localStorage.setItem('lockbox_scenarios', JSON.stringify(scenarios));
+  }
+}
+
+function restoreScenario(id) {
+  const s = getScenarios().find(x => x.id === id);
+  if (!s) return;
+  const sv = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val; };
+  const q = s.q;
+  sv('q-ol', q.ol); sv('q-or', q.or_); sv('q-bal', q.bal); sv('q-ov', q.ov);
+  sv('q-nv', q.nv); sv('q-tax', q.tax); sv('q-ins', q.ins);
+  sv('q-nl', q.nl); sv('q-nr', q.nr); sv('q-term', q.term);
+  sv('q-lc', q.lc); sv('q-cc', q.cc); sv('q-esc', q.esc);
+  numOpts = s.numOpts || 2;
+  recIdx  = s.recIdx  || 0;
+  document.getElementById('ct2').classList.toggle('on', numOpts === 2);
+  document.getElementById('ct3').classList.toggle('on', numOpts === 3);
+  buildOptInputs();
+  (s.opts || []).forEach((o, i) => {
+    if (i >= numOpts) return;
+    sv('o'+i+'r',   o.r);   sv('o'+i+'t',   o.t);   sv('o'+i+'l',   o.l);
+    sv('o'+i+'cc',  o.cc);  sv('o'+i+'pts', o.pts); sv('o'+i+'esc', o.esc);
+    sv('o'+i+'lc',  o.lc);  sv('o'+i+'po',  o.po);
+  });
+  if (s.email) {
+    sv('e-name', s.email.name);
+    sv('e-date', s.email.date);
+    sv('e-agent', s.email.agent);
+  }
+  cq();
+  _doBuildComparison();
+  // Switch to qualify tab so user sees the restored data
+  const qualifyBtn = document.querySelector('.tab');
+  showTab('qualify', qualifyBtn);
+}
+
+function escAttr(s) { return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+function renderScenarios() {
+  const el = document.getElementById('scenarios-list');
+  if (!el) return;
+  const scenarios = getScenarios();
+  if (scenarios.length === 0) {
+    el.innerHTML = '<p class="sc-empty">No saved scenarios yet.<br>Fill in the Qualify and Option Builder tabs, then click <b>Save scenario</b> in the title bar.</p>';
+    return;
+  }
+  el.innerHTML = scenarios.map(s => {
+    const q = s.q || {};
+    const pi    = q.nr  ? pmt(q.nr,  q.term || 360, q.nl)  : 0;
+    const oldPI = q.or_ ? pmt(q.or_, 360,            q.ol)  : 0;
+    const sav   = oldPI - pi;
+    const ltv   = q.nv  ? Math.round((q.nl / q.nv) * 100) + '%' : '—';
+    return '<div class="sc-card">' +
+      '<div class="sc-head">' +
+        '<input class="sc-name" value="' + escAttr(s.name) + '" onchange="renameScenario(' + s.id + ', this.value)">' +
+        '<span class="sc-date">' + escAttr(s.created) + '</span>' +
+      '</div>' +
+      '<div class="sc-meta">' +
+        (q.nr  ? '<span>Rate <b>' + q.nr + '%</b></span>' : '') +
+        (pi    ? '<span>P&amp;I <b>' + fd(pi) + '/mo</b></span>' : '') +
+        (sav > 0 ? '<span class="ok">Saves ' + fd(sav) + '/mo</span>' : '') +
+        (ltv   ? '<span>LTV <b>' + ltv + '</b></span>' : '') +
+        (s.numOpts ? '<span>' + s.numOpts + ' options saved</span>' : '') +
+      '</div>' +
+      '<div class="sc-actions">' +
+        '<button class="btn btn-primary" onclick="restoreScenario(' + s.id + ')">Restore</button>' +
+        '<button class="btn sc-del" onclick="deleteScenario(' + s.id + ')">Delete</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
 // ── Init ───────────────────────────────────────────────────────────────
 cq();
 buildOptInputs();
 _doBuildComparison();  // call directly on init (no debounce needed)
+renderScenarios();
 </script>
 </body>
 </html>
