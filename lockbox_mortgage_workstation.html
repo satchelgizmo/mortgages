@@ -1221,16 +1221,13 @@ function getScenarios() {
   catch (e) { return []; }
 }
 
-let _pendingScenario = null;
-
-function saveScenario() {
+function _buildScenarioData(name, id, created) {
   const nr = gv('q-nr'), nl = gv('q-nl'), term = gv('q-term') || 360;
   const savPI = pmt(gv('q-or'), 360, gv('q-ol')) - pmt(nr, term, nl);
-  const autoName = nr + '% refi — saves ' + fd(savPI) + '/mo';
-  _pendingScenario = {
-    id: Date.now(),
-    name: autoName,
-    created: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}),
+  return {
+    id:      id      || Date.now(),
+    name:    name    || (nr + '% refi — saves ' + fd(savPI) + '/mo'),
+    created: created || new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}),
     q: {
       ol: gv('q-ol'), or_: gv('q-or'), bal: gv('q-bal'), ov: gv('q-ov'),
       nv: gv('q-nv'), tax: gv('q-tax'), ins: gv('q-ins'),
@@ -1240,15 +1237,34 @@ function saveScenario() {
     optPayoff: gv('opt-payoff'),
     opts: Array.from({length: numOpts}, (_, i) => ({
       r: ogv(i,'r'), t: ogv(i,'t'), l: ogv(i,'l'),
-      cc: ogv(i,'cc'), pts: ogv(i,'pts'), esc: ogv(i,'esc'),
-      lc: ogv(i,'lc')
+      cc: ogv(i,'cc'), pts: ogv(i,'pts'), esc: ogv(i,'esc'), lc: ogv(i,'lc')
     })),
     email: {
-      name: document.getElementById('e-name').value,
-      date: document.getElementById('e-date').value,
+      name:  document.getElementById('e-name').value,
+      date:  document.getElementById('e-date').value,
       agent: document.getElementById('e-agent').value
     }
   };
+}
+
+function updateScenario(id) {
+  const scenarios = getScenarios();
+  const idx = scenarios.findIndex(s => s.id === id);
+  if (idx === -1) return;
+  const existing = scenarios[idx];
+  scenarios[idx] = _buildScenarioData(existing.name, existing.id, existing.created);
+  localStorage.setItem('lockbox_scenarios', JSON.stringify(scenarios));
+  const btn = document.getElementById('sc-upd-' + id);
+  if (btn) { btn.textContent = 'Updated!'; setTimeout(() => { btn.textContent = 'Update'; }, 1800); }
+}
+
+let _pendingScenario = null;
+
+function saveScenario() {
+  const nr = gv('q-nr'), nl = gv('q-nl'), term = gv('q-term') || 360;
+  const savPI = pmt(gv('q-or'), 360, gv('q-ol')) - pmt(nr, term, nl);
+  const autoName = nr + '% refi — saves ' + fd(savPI) + '/mo';
+  _pendingScenario = _buildScenarioData(autoName);
   const input = document.getElementById('modal-name');
   input.value = autoName;
   document.getElementById('save-modal').classList.add('open');
@@ -1354,6 +1370,7 @@ function renderScenarios() {
       '</div>' +
       '<div class="sc-actions">' +
         '<button class="btn btn-primary" onclick="restoreScenario(' + s.id + ')">Restore</button>' +
+        '<button class="btn" id="sc-upd-' + s.id + '" onclick="updateScenario(' + s.id + ')">Update</button>' +
         '<button class="btn sc-del" onclick="deleteScenario(' + s.id + ')">Delete</button>' +
       '</div>' +
     '</div>';
