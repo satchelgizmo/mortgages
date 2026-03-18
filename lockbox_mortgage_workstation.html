@@ -468,6 +468,32 @@ body {
   transition: background .1s;
 }
 .save-btn:hover { background: rgba(255,255,255,.2); }
+
+/* ── Naming modal ────────────────────────────────────────────────────── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.45); z-index: 1000;
+  align-items: center; justify-content: center;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: var(--c-bg); border-radius: var(--r-lg);
+  padding: 28px 28px 22px; width: 420px; max-width: calc(100vw - 32px);
+  box-shadow: 0 8px 40px rgba(0,0,0,.22);
+}
+.modal h3 { font-size: 15px; font-weight: 700; color: var(--c-text); margin-bottom: 14px; }
+.modal input[type="text"] {
+  width: 100%; font-size: 14px; padding: 8px 10px;
+  border: 1.5px solid var(--c-border); border-radius: var(--r-md);
+  font-family: var(--font); color: var(--c-text); margin-bottom: 18px;
+  outline: none;
+}
+.modal input[type="text"]:focus { border-color: var(--c-accent); box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+.modal-btns { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-btns button { font-size: 13px; padding: 7px 18px; border-radius: var(--r-md); font-family: var(--font); cursor: pointer; font-weight: 500; border: 1.5px solid var(--c-border); background: var(--c-bg2); color: var(--c-text2); transition: background .1s; }
+.modal-btns button.primary { background: var(--c-accent); color: #fff; border-color: var(--c-accent); }
+.modal-btns button.primary:hover { background: #1D4ED8; }
+.modal-btns button:not(.primary):hover { background: var(--c-bg3); }
 </style>
 </head>
 <body>
@@ -665,6 +691,18 @@ body {
   </div>
 
 </div><!-- /.app -->
+
+<!-- Save scenario naming modal -->
+<div class="modal-overlay" id="save-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <h3>Name this scenario</h3>
+    <input type="text" id="modal-name" placeholder="Scenario name" onkeydown="if(event.key==='Enter')confirmSave();if(event.key==='Escape')closeModal()">
+    <div class="modal-btns">
+      <button onclick="closeModal()">Cancel</button>
+      <button class="primary" onclick="confirmSave()">Save</button>
+    </div>
+  </div>
+</div>
 
 <script>
 'use strict';
@@ -1074,19 +1112,33 @@ function ge() {
       '<div class="e-sum-header">Options at a glance</div>' +
       '<div class="e-sum-grid">' + sumRows + '</div>';
 
-    // Build option blocks for email
-    let optBlocks = '';
+    // Compute savings vs current for each option
     opts.forEach(o => {
-      const cd  = Math.abs(o.cashDue);
-      const cl  = o.cashDue <= 0 ? fm(cd) + ' back at closing' : fm(cd) + ' due at closing';
-      optBlocks += o.label + ': ' + o.rate + '%\n' +
-        '  Payment:         ' + fd(o.pi) + '/month P&I\n' +
-        '  Loan amount:     ' + fm(o.loan) + '\n' +
-        (o.lc > 0
-          ? '  Lender credit:   ' + fm(o.lc) + ' (applied toward closing costs)\n'
-          : '  Lender credit:   none\n') +
-        '  Cash at closing: ' + cl + '\n\n';
+      o.savings = oldPINum - o.pi;
+      o.ccTotal = o.cc + o.pts;
     });
+
+    // Build padEnd-aligned comparison table for email
+    const colW = 16;
+    const labelW = 26;
+    const tRow = (label, vals) =>
+      label.padEnd(labelW) + vals.map(v => v.padEnd(colW)).join('') + '\n';
+    const tDivider = '-'.repeat(labelW + colW * opts.length) + '\n';
+    const headers = opts.map(o => o.label);
+    let optBlocks =
+      tRow('', headers) +
+      tDivider +
+      tRow('Rate', opts.map(o => o.rate + '%')) +
+      tRow('Monthly P&I', opts.map(o => '$' + fd(o.pi))) +
+      tRow('Monthly savings', opts.map(o => o.savings > 0 ? '$' + fd(o.savings) + '/mo' : '—')) +
+      tRow('Loan amount', opts.map(o => '$' + fm(o.loan))) +
+      tRow('Closing costs + fees', opts.map(o => '$' + fm(o.ccTotal))) +
+      tRow('Lender credit', opts.map(o => o.lc > 0 ? '$' + fm(o.lc) : 'none')) +
+      tRow('Cash at closing', opts.map(o => {
+        const cd = Math.abs(o.cashDue);
+        return (o.cashDue <= 0 ? '$' + fm(cd) + ' back' : '$' + fm(cd) + ' due');
+      })) +
+      tDivider + '\n';
 
     // Savings vs current for the lowest-payment option
     const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
@@ -1140,13 +1192,15 @@ function getScenarios() {
   catch (e) { return []; }
 }
 
+let _pendingScenario = null;
+
 function saveScenario() {
   const nr = gv('q-nr'), nl = gv('q-nl'), term = gv('q-term') || 360;
   const savPI = pmt(gv('q-or'), 360, gv('q-ol')) - pmt(nr, term, nl);
-  const scenarios = getScenarios();
-  const scenario = {
+  const autoName = nr + '% refi — saves ' + fd(savPI) + '/mo';
+  _pendingScenario = {
     id: Date.now(),
-    name: nr + '% refi — saves ' + fd(savPI) + '/mo',
+    name: autoName,
     created: new Date().toLocaleDateString('en-US', {month: 'short', day: 'numeric', year: 'numeric'}),
     q: {
       ol: gv('q-ol'), or_: gv('q-or'), bal: gv('q-bal'), ov: gv('q-ov'),
@@ -1165,8 +1219,26 @@ function saveScenario() {
       agent: document.getElementById('e-agent').value
     }
   };
-  scenarios.unshift(scenario);
+  const input = document.getElementById('modal-name');
+  input.value = autoName;
+  document.getElementById('save-modal').classList.add('open');
+  setTimeout(() => { input.select(); }, 60);
+}
+
+function closeModal() {
+  document.getElementById('save-modal').classList.remove('open');
+  _pendingScenario = null;
+}
+
+function confirmSave() {
+  if (!_pendingScenario) return;
+  const nameVal = document.getElementById('modal-name').value.trim();
+  if (nameVal) _pendingScenario.name = nameVal;
+  const scenarios = getScenarios();
+  scenarios.unshift(_pendingScenario);
   localStorage.setItem('lockbox_scenarios', JSON.stringify(scenarios));
+  _pendingScenario = null;
+  document.getElementById('save-modal').classList.remove('open');
   renderScenarios();
   const btn = document.getElementById('save-btn');
   const orig = btn.textContent;
