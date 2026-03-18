@@ -781,6 +781,7 @@ function _doBuildComparison() {
       payoff: ogv(i,'po')
     };
     o.pi      = pmt(o.rate, o.term, o.loan);
+    o.ccTotal = o.cc + o.pts;  // combined for table display (matches Loan Estimate format)
     o.cashDue = o.payoff + o.cc + o.pts + o.esc - o.loan - o.lc; // positive = due, negative = back
     opts.push(o);
   }
@@ -807,15 +808,14 @@ function _doBuildComparison() {
   const fmCash = v => v <= 0 ? fm(-v) + ' back' : fm(v) + ' due';
 
   const rows = [
-    {label: 'Rate',               key: 'rate',    fmt: v => v + '%',  low: true},
-    {label: 'Term',               key: 'term',    fmt: v => v + ' mo', low: null}, // informational only
-    {label: 'Monthly P&I',       key: 'pi',      fmt: fd,             low: true},
-    {label: 'Loan amount',        key: 'loan',    fmt: fm,             low: true},
-    {label: 'Closing costs',      key: 'cc',      fmt: fm,             low: true},
-    {label: 'Points',             key: 'pts',     fmt: v => v > 0 ? fm(v) : '—', low: true},
-    {label: 'Escrows / prepaids', key: 'esc',     fmt: fm,             low: true},
-    {label: 'Lender credit',      key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
-    {label: 'Cash due at closing',key: 'cashDue', fmt: fmCash,         low: true}
+    {label: 'Rate',                             key: 'rate',    fmt: v => v + '%',              low: true},
+    {label: 'Term',                             key: 'term',    fmt: v => v + ' mo',            low: null},
+    {label: 'Monthly P&I',                     key: 'pi',      fmt: fd,                        low: true},
+    {label: 'Loan amount',                      key: 'loan',    fmt: fm,                        low: true},
+    {label: 'Closing costs + origination',      key: 'ccTotal', fmt: fm,                        low: true},
+    {label: 'Escrows / prepaids',               key: 'esc',     fmt: fm,                        low: true},
+    {label: 'Lender credit',                    key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
+    {label: 'Cash due at closing',              key: 'cashDue', fmt: fmCash,                    low: true}
   ];
 
   const colW = Math.floor(65 / numOpts);
@@ -836,7 +836,7 @@ function _doBuildComparison() {
     html += '<tr><td class="lbl">' + row.label + '</td>';
     opts.forEach(o => {
       const v      = o[row.key];
-      const isNA   = ((row.key === 'lc' || row.key === 'pts') && v === 0) || row.low === null;
+      const isNA   = (row.key === 'lc' && v === 0) || row.low === null;
       const isBest = !isNA && (v === best);
       html += '<td class="' + (isNA ? 'r' : isBest ? 'win' : 'lose') + '">' + row.fmt(v) + '</td>';
     });
@@ -850,13 +850,14 @@ function _doBuildComparison() {
   const bestLc  = opts.reduce((a, b) => a.lc > b.lc ? a : b);
   let insight = '';
   if (bestLc.lc > 0 && bestLc !== bestPmt) {
-    const diff = bestPmt.pi - bestLc.pi;
-    const be   = diff > 0 ? Math.round(bestLc.lc / diff) : null;
+    const diff = bestLc.pi - bestPmt.pi;  // extra cost per month for the lender-credit option
+    // Breakeven = (points paid for lower rate + lender credit given up) / monthly payment difference
+    const be   = diff > 0 ? Math.round((bestPmt.pts + bestLc.lc) / diff) : null;
     insight = '<b>' + optLabels[opts.indexOf(bestLc)] + '</b> puts <b>' + fm(bestLc.lc) +
               ' in the borrower\'s pocket on day one</b>. ' +
               'The lower-payment option only comes out ahead after <b>' +
-              (be ? be + ' months (' + (be / 12).toFixed(1) + ' yrs)' : '—') +
-              '</b> — well beyond the typical refi horizon.';
+              (be ? be + ' months (' + (be / 12).toFixed(1) + ' yrs)' : 'a very long time') +
+              '</b>, well beyond the typical refi horizon.';
   }
   document.getElementById('cmp-insight').innerHTML = insight;
 
@@ -1010,14 +1011,15 @@ function ge() {
     const bestLc = opts.reduce((a, b) => a.lc > b.lc ? a : b);
     let insight = '';
     if (bestLc.lc > 0 && bestLc !== bestPmt) {
-      const diff = bestPmt.pi - bestLc.pi;
-      const be   = diff > 0 ? Math.round(bestLc.lc / diff) : null;
+      const diff = bestLc.pi - bestPmt.pi;  // extra cost per month for the lender-credit option
+      // Breakeven = (points paid for lower rate + lender credit given up) / monthly payment difference
+      const be   = diff > 0 ? Math.round((bestPmt.pts + bestLc.lc) / diff) : null;
       insight =
         'A note on the tradeoff: ' + bestLc.label + ' puts ' + fm(bestLc.lc) +
         ' in your pocket on day one through the lender credit. ' +
-        bestPmt.label + '\'s lower rate saves an extra ' + fd(diff) + '/month, ' +
-        'but you wouldn\'t break even on that difference for ' +
-        (be ? be + ' months (' + (be / 12).toFixed(1) + ' years)' : 'a long time') +
+        bestPmt.label + '\'s lower rate costs an extra ' + fd(diff) + '/month, ' +
+        'and you wouldn\'t break even on that difference for ' +
+        (be ? be + ' months (' + (be / 12).toFixed(1) + ' years)' : 'a very long time') +
         ', well beyond the typical refinance horizon. Most borrowers are better served by the immediate cash.\n\n';
     }
 
