@@ -519,6 +519,15 @@ body {
 .h-detail-lbl { color: var(--c-text3); }
 .h-detail-val { font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
 
+/* Clickable CLTV rows */
+.cltv-row { cursor: pointer; transition: background .1s; border-radius: var(--r-md); }
+.cltv-row:hover { background: var(--c-acc-bg); }
+.cltv-row.cltv-active { background: var(--c-acc-bg); }
+.cltv-row.cltv-active .h-detail-val { color: var(--c-accent); }
+
+/* Cash received at closing row */
+.cash-row { margin-top: 2px; padding-top: 9px !important; border-top: 2px solid var(--c-border2) !important; border-bottom: none !important; }
+.cash-row .h-detail-val { color: var(--c-ok); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -770,8 +779,12 @@ body {
         <div>
           <div id="he-metrics" class="metrics-grid"></div>
           <div id="he-warn" style="display:none" class="warn-box"></div>
+          <div class="card" id="he-cltv-card" style="margin-bottom:12px">
+            <div class="card-head"><span class="card-title" id="he-cltv-title">Max line by CLTV — click to apply</span></div>
+            <div class="card-body" id="he-cltv"></div>
+          </div>
           <div class="card" id="he-details-card" style="margin-bottom:12px">
-            <div class="card-head"><span class="card-title" id="he-details-title">Rate details &amp; max lines</span></div>
+            <div class="card-head"><span class="card-title">Rate &amp; cost details</span></div>
             <div class="card-body" id="he-details"></div>
           </div>
           <div>
@@ -1636,6 +1649,18 @@ function syncHEDraw(v) {
   if (!d._dirty) d.value = v;
 }
 
+function setHEAmount(amount) {
+  if (heMode === 'heloc') {
+    document.getElementById('he-line').value = amount;
+    const d = document.getElementById('he-draw');
+    d._dirty = false;
+    d.value = amount;
+  } else {
+    document.getElementById('he-loan').value = amount;
+  }
+  calcHE();
+}
+
 function calcHE() {
   if (heMode === 'heloc') ch(); else chl();
 }
@@ -1659,6 +1684,7 @@ function ch() {
   const warnEl       = document.getElementById('he-warn');
   const detailsEl    = document.getElementById('he-details');
   const detailsCard  = document.getElementById('he-details-card');
+  const cltvCard     = document.getElementById('he-cltv-card');
   const emailEl      = document.getElementById('he-emailout');
 
   if (!val || val <= 0) {
@@ -1706,11 +1732,14 @@ function ch() {
                           mcard('Total closing costs', 'N/A', 'Closing costs', '');
     detailsEl.innerHTML = '';
     detailsCard.style.display = 'none';
+    cltvCard.style.display = 'none';
+    document.getElementById('he-cltv').innerHTML = '';
     emailEl.innerText = '';
     return;
   }
 
   detailsCard.style.display = '';
+  cltvCard.style.display = '';
 
   const margin     = lookup.margin;
   const rawRate    = prime + margin + adjTotal;
@@ -1736,14 +1765,25 @@ function ch() {
     mcard('Monthly payment', fd(drawMonthly), paySub, '') +
     mcard('Total closing costs', fm(totalCC), fm(brokerFee) + ' broker' + (appraisalRequired ? ' + $1,500 appraisal' : ''), '');
 
-  // Max lines helper
-  function maxLine(ltv) { return Math.max(0, val * (ltv / 100) - bal); }
-  const maxLines80 = maxLine(80);
-  const maxLines85 = maxLine(85);
-  const maxLines90 = maxLine(90);
-  const maxLines95 = maxLine(95);
+  // CLTV table — clickable rows
+  const levels = lien === 2 ? [60,65,70,75,80,85,90,95] : [60,65,70,75,80,85,90];
+  let cltvHtml = '';
+  for (const ltv of levels) {
+    const raw = Math.floor(Math.max(0, val * (ltv / 100) - bal));
+    const cap = lien === 1 ? (ltv <= 65 ? 750000 : 500000) : 400000;
+    const amt = Math.min(raw, cap);
+    const isActive = amt > 0 && Math.round(line) === amt;
+    cltvHtml += '<div class="h-detail-row cltv-row' + (isActive ? ' cltv-active' : '') + '"' +
+      (amt > 0 ? ' onclick="setHEAmount(' + amt + ')"' : '') + '>' +
+      '<span class="h-detail-lbl">' + ltv + '% CLTV</span>' +
+      '<span class="h-detail-val">' + (amt <= 0 ? '—' : fm(amt)) + '</span>' +
+      '</div>';
+  }
+  document.getElementById('he-cltv').innerHTML = cltvHtml;
+  document.getElementById('he-cltv-title').textContent = 'Max line by CLTV — click to apply';
 
-  // Details section
+  // Rate & cost details
+  const cashAtClose = draw - totalCC;
   let detailsHtml =
     '<div class="h-detail-row"><span class="h-detail-lbl">Rate breakdown</span>' +
     '<span class="h-detail-val">Prime (' + prime + '%) + ' + margin + '% margin' +
@@ -1759,27 +1799,11 @@ function ch() {
 
   detailsHtml +=
     '<div class="h-detail-row"><span class="h-detail-lbl">FICO band / CLTV band</span>' +
-    '<span class="h-detail-val">' + lookup.ficoLabel + ' / ' + lookup.cltvLabel + '</span></div>';
-
-  if (appraisalRequired) {
-    detailsHtml +=
-      '<div class="h-detail-row"><span class="h-detail-lbl">Appraisal + title overlay</span>' +
-      '<span class="h-detail-val">~$1,500 (line ≥ $250k)</span></div>';
-  }
-
-  detailsHtml +=
-    '<div class="h-detail-row"><span class="h-detail-lbl">Max line at 80% CLTV</span>' +
-    '<span class="h-detail-val">' + fm(maxLines80) + '</span></div>' +
-    '<div class="h-detail-row"><span class="h-detail-lbl">Max line at 85% CLTV</span>' +
-    '<span class="h-detail-val">' + fm(maxLines85) + '</span></div>' +
-    '<div class="h-detail-row"><span class="h-detail-lbl">Max line at 90% CLTV</span>' +
-    '<span class="h-detail-val">' + fm(maxLines90) + '</span></div>';
-
-  if (lien === 2) {
-    detailsHtml +=
-      '<div class="h-detail-row"><span class="h-detail-lbl">Max line at 95% CLTV</span>' +
-      '<span class="h-detail-val">' + fm(maxLines95) + '</span></div>';
-  }
+    '<span class="h-detail-val">' + lookup.ficoLabel + ' / ' + lookup.cltvLabel + '</span></div>' +
+    '<div class="h-detail-row"><span class="h-detail-lbl">Closing costs</span>' +
+    '<span class="h-detail-val">' + fm(totalCC) + (appraisalRequired ? ' (incl. appraisal)' : '') + '</span></div>' +
+    '<div class="h-detail-row cash-row"><span class="h-detail-lbl">Cash received at closing</span>' +
+    '<span class="h-detail-val">' + (cashAtClose >= 0 ? fm(Math.round(cashAtClose)) : '—') + '</span></div>';
 
   detailsEl.innerHTML = detailsHtml;
 
@@ -1870,6 +1894,7 @@ function chl() {
   const warnEl      = document.getElementById('he-warn');
   const detailsEl   = document.getElementById('he-details');
   const detailsCard = document.getElementById('he-details-card');
+  const cltvCard    = document.getElementById('he-cltv-card');
   const emailEl     = document.getElementById('he-emailout');
 
   if (!val || val <= 0) {
@@ -1877,6 +1902,8 @@ function chl() {
     warnEl.style.display = 'block';
     metricsEl.innerHTML = '';
     detailsEl.innerHTML = '';
+    cltvCard.style.display = 'none';
+    document.getElementById('he-cltv').innerHTML = '';
     emailEl.innerText = '';
     return;
   }
@@ -1912,11 +1939,14 @@ function chl() {
                           mcard('Total closing costs', 'N/A', 'Closing costs', '');
     detailsEl.innerHTML = '';
     detailsCard.style.display = 'none';
+    cltvCard.style.display = 'none';
+    document.getElementById('he-cltv').innerHTML = '';
     emailEl.innerText = '';
     return;
   }
 
   detailsCard.style.display = '';
+  cltvCard.style.display = '';
 
   const baseRate  = lookup.rate;
   const totalRate = baseRate + adjTotal;
@@ -1938,7 +1968,24 @@ function chl() {
     mcard('Monthly payment', fd(monthly), 'Fully amortizing', '') +
     mcard('Total closing costs', fm(Math.round(totalCC)), fm(Math.round(brokerFee)) + ' broker + ' + fm(Math.round(lenderFees)) + ' lender', '');
 
-  // Details
+  // CLTV table — clickable rows (HELOAN max 90%)
+  const levelsHL = [60,65,70,75,80,85,90];
+  let cltvHtml = '';
+  for (const ltv of levelsHL) {
+    const raw = Math.floor(Math.max(0, val * (ltv / 100) - bal));
+    const amt = Math.min(raw, lookup.maxLoan);
+    const isActive = amt > 0 && Math.round(loan) === amt;
+    cltvHtml += '<div class="h-detail-row cltv-row' + (isActive ? ' cltv-active' : '') + '"' +
+      (amt > 0 ? ' onclick="setHEAmount(' + amt + ')"' : '') + '>' +
+      '<span class="h-detail-lbl">' + ltv + '% CLTV</span>' +
+      '<span class="h-detail-val">' + (amt <= 0 ? '—' : fm(amt)) + '</span>' +
+      '</div>';
+  }
+  document.getElementById('he-cltv').innerHTML = cltvHtml;
+  document.getElementById('he-cltv-title').textContent = 'Max loan by CLTV — click to apply';
+
+  // Rate & cost details
+  const cashAtClose = loan - Math.round(totalCC);
   let detailsHtml =
     '<div class="h-detail-row"><span class="h-detail-lbl">Rate breakdown</span>' +
     '<span class="h-detail-val">Base ' + baseRate + '%' +
@@ -1954,24 +2001,10 @@ function chl() {
   detailsHtml +=
     '<div class="h-detail-row"><span class="h-detail-lbl">FICO band / CLTV band</span>' +
     '<span class="h-detail-val">' + lookup.ficoLabel + ' / ' + lookup.cltvLabel + '</span></div>' +
-    '<div class="h-detail-row"><span class="h-detail-lbl">Max loan (this FICO)</span>' +
-    '<span class="h-detail-val">' + fm(lookup.maxLoan) + '</span></div>' +
-    '<div class="h-detail-row"><span class="h-detail-lbl">Lender fees (orig + proc + flood + credit)</span>' +
-    '<span class="h-detail-val">$495 + $100 + $6 + ' + fd(creditReportFee) + ' = ' + fm(Math.round(lenderFees)) + '</span></div>' +
-    '<div class="h-detail-row"><span class="h-detail-lbl">Broker fee (' + bpc + '%)</span>' +
-    '<span class="h-detail-val">' + fm(Math.round(brokerFee)) + '</span></div>';
-
-  if (appraisalRequired) {
-    detailsHtml +=
-      '<div class="h-detail-row"><span class="h-detail-lbl">Appraisal + title overlay</span>' +
-      '<span class="h-detail-val">~$1,500 (loan ≥ $250k)</span></div>';
-  }
-
-  if (cc > 0) {
-    detailsHtml +=
-      '<div class="h-detail-row"><span class="h-detail-lbl">Misc closing costs</span>' +
-      '<span class="h-detail-val">' + fm(cc) + '</span></div>';
-  }
+    '<div class="h-detail-row"><span class="h-detail-lbl">Closing costs</span>' +
+    '<span class="h-detail-val">' + fm(Math.round(totalCC)) + (appraisalRequired ? ' (incl. appraisal)' : '') + '</span></div>' +
+    '<div class="h-detail-row cash-row"><span class="h-detail-lbl">Cash received at closing</span>' +
+    '<span class="h-detail-val">' + (cashAtClose >= 0 ? fm(cashAtClose) : '—') + '</span></div>';
 
   detailsEl.innerHTML = detailsHtml;
 
