@@ -293,7 +293,21 @@ body {
   background: var(--c-acc-bg); color: var(--c-acc-txt);
   font-weight: 600; border: 1px solid var(--c-acc-brd);
 }
+.rec-btn {
+  font-size: 10.5px; padding: 3px 10px; border-radius: 99px;
+  background: transparent; color: var(--c-text3);
+  font-weight: 600; border: 1px solid var(--c-border);
+  cursor: pointer; font-family: var(--font);
+  transition: background .1s, color .1s, border-color .1s;
+}
+.rec-btn:hover { background: var(--c-bg3); color: var(--c-text2); }
+.rec-btn.active { background: var(--c-acc-bg); color: var(--c-acc-txt); border-color: var(--c-acc-brd); }
 .ocard-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
+.opt-blurb {
+  font-size: 12px; color: var(--c-text3); line-height: 1.55;
+  padding: 8px 10px; background: var(--c-bg2);
+  border: 1px solid var(--c-border3); border-radius: var(--r-md);
+}
 
 /* ── Calculated P&I display in option cards ─────────────────────────── */
 .pi-disp {
@@ -613,6 +627,7 @@ body {
 'use strict';
 
 let numOpts = 2;
+let recIdx  = 0;
 const optLabels = ['Option A', 'Option B', 'Option C'];
 const defaults = [
   {rate: 6.375, term: 360, loan: 492100, cc: 3840, esc: 6345, lc: 1295, pts: 0, payoff: 483209},
@@ -725,6 +740,7 @@ function mcard(label, val, sub, cls) {
 // ── Option builder ─────────────────────────────────────────────────────
 function setOpts(n) {
   numOpts = n;
+  recIdx  = 0;
   document.getElementById('ct2').classList.toggle('on', n === 2);
   document.getElementById('ct3').classList.toggle('on', n === 3);
   buildOptInputs();
@@ -737,23 +753,32 @@ function buildOptInputs() {
     const d = defaults[i];
     const initPI = fd(pmt(d.rate, d.term, d.loan));
     html +=
-      '<div class="ocard"><div class="ocard-head"><span class="otitle">' + optLabels[i] + '</span></div>' +
+      '<div class="ocard"><div class="ocard-head">' +
+        '<span class="otitle">' + optLabels[i] + '</span>' +
+        '<button class="rec-btn' + (i === recIdx ? ' active' : '') + '" onclick="setRec(' + i + ')">Recommend</button>' +
+      '</div>' +
       '<div class="ocard-body">' +
-      numField('Rate (%)',                    'o'+i+'r',  d.rate,    0.125) +
-      numField('Term (months)',               'o'+i+'t',  d.term,    1) +
-      numField('Loan amount ($)',             'o'+i+'l',  d.loan,    1) +
+      numField('Rate (%)',                      'o'+i+'r',   d.rate,    0.125) +
+      numField('Term (months)',                 'o'+i+'t',   d.term,    1) +
+      numField('Loan amount ($)',               'o'+i+'l',   d.loan,    1) +
       '<div class="pi-disp"><span class="pi-disp-lbl">Monthly P&amp;I</span>' +
         '<span class="pi-disp-val" id="o'+i+'pidisp">' + initPI + '</span></div>' +
-      numField('Closing costs ($)',   'o'+i+'cc',  d.cc,      1) +
-      numField('Points ($)',          'o'+i+'pts', d.pts,     1) +
-      numField('Escrows / prepaids ($)', 'o'+i+'esc', d.esc,  1) +
-      numField('Lender credit ($)',   'o'+i+'lc',  d.lc,      1) +
-      numField('Payoff amount ($)',   'o'+i+'po',  d.payoff,  1) +
+      numField('Closing costs ($)',             'o'+i+'cc',  d.cc,      1) +
+      numField('Points ($)',                    'o'+i+'pts', d.pts,     1) +
+      numField('Escrows / prepaids ($)',        'o'+i+'esc', d.esc,     1) +
+      numField('Lender credit ($)',             'o'+i+'lc',  d.lc,      1) +
+      numField('Payoff amount ($)',             'o'+i+'po',  d.payoff,  1) +
+      '<div class="opt-blurb" id="o'+i+'blurb"></div>' +
       '</div></div>';
   }
   document.getElementById('opt-inputs').className = 'opt-grid ' + (numOpts === 2 ? 'opt2' : 'opt3');
   document.getElementById('opt-inputs').innerHTML = html;
   // buildComparison() calls highlight — do not call it here too
+}
+
+function setRec(i) {
+  recIdx = i;
+  _doBuildComparison();
 }
 
 function numField(lbl, id, val, step) {
@@ -768,6 +793,8 @@ function buildComparison() {
 }
 
 function _doBuildComparison() {
+  const currentPI = pmt(gv('q-or'), 360, gv('q-ol'));
+
   const opts = [];
   for (let i = 0; i < numOpts; i++) {
     const o = {
@@ -781,8 +808,9 @@ function _doBuildComparison() {
       payoff: ogv(i,'po')
     };
     o.pi      = pmt(o.rate, o.term, o.loan);
-    o.ccTotal = o.cc + o.pts;  // combined for table display (matches Loan Estimate format)
-    o.cashDue = o.payoff + o.cc + o.pts + o.esc - o.loan - o.lc; // positive = due, negative = back
+    o.ccTotal = o.cc + o.pts;
+    o.cashDue = o.payoff + o.cc + o.pts + o.esc - o.loan - o.lc;
+    o.savings = currentPI - o.pi;
     opts.push(o);
   }
 
@@ -792,30 +820,52 @@ function _doBuildComparison() {
     if (el) el.textContent = fd(o.pi);
   });
 
-  // Rec = highest lender credit
-  const maxLc  = Math.max(...opts.map(o => o.lc));
-  const recIdx = opts.reduce((best, o, i) => o.lc > opts[best].lc ? i : best, 0);
+  // Clamp recIdx in case option count decreased
+  if (recIdx >= numOpts) recIdx = 0;
+
+  // Update card borders, rec-buttons, and generate blurbs
+  const lowestPI   = Math.min(...opts.map(o => o.pi));
+  const highestLC  = Math.max(...opts.map(o => o.lc));
 
   document.querySelectorAll('.ocard').forEach((card, i) => {
-    const isRec = (i === recIdx && maxLc > 0);
-    card.classList.toggle('rec', isRec);
-    const head  = card.querySelector('.ocard-head');
-    const badge = head.querySelector('.rbadge');
-    if (isRec && !badge) head.insertAdjacentHTML('beforeend', '<span class="rbadge">rec.</span>');
-    if (!isRec && badge) badge.remove();
+    card.classList.toggle('rec', i === recIdx);
+    const btn = card.querySelector('.rec-btn');
+    if (btn) btn.classList.toggle('active', i === recIdx);
+  });
+
+  opts.forEach((o, i) => {
+    const blurb = document.getElementById('o' + i + 'blurb');
+    if (!blurb) return;
+    const isLowest   = o.pi === lowestPI;
+    const isHighestLC = o.lc === highestLC && o.lc > 0;
+    let text = '';
+    if (isLowest && isHighestLC) {
+      text = 'Best of both: lowest payment and most cash at closing. Strong choice regardless of how long you plan to stay.';
+    } else if (isLowest) {
+      text = 'Lowest monthly payment. Saves ' + fd(o.savings) + '/mo vs. your current loan. Best long-term value if you stay in the home.';
+    } else if (isHighestLC) {
+      const pmtDiff = o.pi - lowestPI;
+      text = 'Most cash upfront: ' + fm(o.lc) + ' lender credit. Payment is ' + fd(pmtDiff) + '/mo more than the lowest rate option — see breakeven below.';
+    } else {
+      const pmtAboveLowest = o.pi - lowestPI;
+      text = (o.lc > 0 ? fm(o.lc) + ' lender credit with a mid-range rate. ' : 'Middle option. ') +
+             'Payment is ' + fd(pmtAboveLowest) + '/mo above the lowest option, saving ' + fd(o.savings) + '/mo vs. your current loan.';
+    }
+    blurb.textContent = text;
   });
 
   const fmCash = v => v <= 0 ? fm(-v) + ' back' : fm(v) + ' due';
 
   const rows = [
-    {label: 'Rate',                             key: 'rate',    fmt: v => v + '%',              low: true},
-    {label: 'Term',                             key: 'term',    fmt: v => v + ' mo',            low: null},
-    {label: 'Monthly P&I',                     key: 'pi',      fmt: fd,                        low: true},
-    {label: 'Loan amount',                      key: 'loan',    fmt: fm,                        low: true},
-    {label: 'Closing costs + origination',      key: 'ccTotal', fmt: fm,                        low: true},
-    {label: 'Escrows / prepaids',               key: 'esc',     fmt: fm,                        low: true},
-    {label: 'Lender credit',                    key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
-    {label: 'Cash due at closing',              key: 'cashDue', fmt: fmCash,                    low: true}
+    {label: 'Rate',                               key: 'rate',    fmt: v => v + '%',              low: true},
+    {label: 'Term',                               key: 'term',    fmt: v => v + ' mo',            low: null},
+    {label: 'Monthly P&I',                       key: 'pi',      fmt: fd,                        low: true},
+    {label: 'Monthly savings vs. current',        key: 'savings', fmt: v => v > 0 ? fd(v) + '/mo' : '—', low: false},
+    {label: 'Loan amount',                        key: 'loan',    fmt: fm,                        low: true},
+    {label: 'Closing costs + Origination fees',   key: 'ccTotal', fmt: fm,                        low: true},
+    {label: 'Escrows / prepaids',                 key: 'esc',     fmt: fm,                        low: true},
+    {label: 'Lender credit',                      key: 'lc',      fmt: v => v > 0 ? fm(v) : '—', low: false},
+    {label: 'Cash due at closing',                key: 'cashDue', fmt: fmCash,                    low: true}
   ];
 
   const colW = Math.floor(65 / numOpts);
@@ -824,7 +874,7 @@ function _doBuildComparison() {
   html += '</colgroup><thead><tr><th></th>';
   for (let i = 0; i < numOpts; i++) {
     html += '<th class="r">' + optLabels[i] +
-            (i === recIdx && maxLc > 0 ? ' <span class="rbadge">rec.</span>' : '') + '</th>';
+            (i === recIdx ? ' <span class="rbadge">rec.</span>' : '') + '</th>';
   }
   html += '</tr></thead><tbody>';
 
@@ -836,7 +886,7 @@ function _doBuildComparison() {
     html += '<tr><td class="lbl">' + row.label + '</td>';
     opts.forEach(o => {
       const v      = o[row.key];
-      const isNA   = (row.key === 'lc' && v === 0) || row.low === null;
+      const isNA   = (row.key === 'lc' && v === 0) || (row.key === 'savings' && v <= 0) || row.low === null;
       const isBest = !isNA && (v === best);
       html += '<td class="' + (isNA ? 'r' : isBest ? 'win' : 'lose') + '">' + row.fmt(v) + '</td>';
     });
