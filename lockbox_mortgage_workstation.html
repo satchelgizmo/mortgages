@@ -519,8 +519,6 @@ body {
 .h-detail-lbl { color: var(--c-text3); }
 .h-detail-val { font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
 
-/* 5-column metrics override for HELOC (adds initial-draw payment card) */
-#h-metrics { grid-template-columns: repeat(5, 1fr); }
 </style>
 </head>
 <body>
@@ -541,8 +539,7 @@ body {
     <button class="tab active" onclick="showTab('qualify',this)"><span class="tab-icon">◎</span>Qualify &amp; quote</button>
     <button class="tab" onclick="showTab('compare',this)"><span class="tab-icon">⇄</span>Option builder</button>
     <button class="tab" onclick="showTab('email',this)"><span class="tab-icon">✉</span>Email generator</button>
-    <button class="tab" onclick="showTab('heloc',this)"><span class="tab-icon">⬡</span>HELOC</button>
-    <button class="tab" onclick="showTab('heloan',this)"><span class="tab-icon">⬢</span>HELOAN</button>
+    <button class="tab" onclick="showTab('he',this)"><span class="tab-icon">⬡</span>Home equity</button>
     <button class="tab" onclick="showTab('checklist',this)"><span class="tab-icon">☑</span>Lock checklist</button>
     <button class="tab" onclick="showTab('saved',this)"><span class="tab-icon">◈</span>Saved scenarios</button>
   </div>
@@ -670,141 +667,119 @@ body {
       </div>
     </div>
 
-    <!-- ── HELOC ─────────────────────────────────────────────────────── -->
-    <div class="panel" id="panel-heloc">
-      <div class="heloc-layout">
+    <!-- ── HOME EQUITY ───────────────────────────────────────────────── -->
+    <div class="panel" id="panel-he">
 
-        <!-- Left: inputs -->
-        <div class="card" style="margin-bottom:0">
-          <div class="card-head"><span class="card-title">HELOC inputs</span></div>
-          <div class="card-body">
-            <div class="fg fg2">
-              <div class="f"><label>Home value ($)</label><input type="number" id="h-val" value="420000" oninput="ch()"></div>
-              <div class="f"><label>First mortgage balance ($)</label><input type="number" id="h-bal" value="141000" oninput="ch()"></div>
-            </div>
-            <div class="fg fg3">
-              <div class="f"><label>HELOC line amount ($)</label><input type="number" id="h-line" value="195000" oninput="syncDraw(this.value);ch()"></div>
-              <div class="f"><label>Initial draw ($)</label><input type="number" id="h-draw" value="195000" oninput="document.getElementById('h-draw')._dirty=true;ch()"></div>
-              <div class="f"><label>Credit score (FICO)</label><input type="number" id="h-fico" value="760" oninput="ch()"></div>
-            </div>
-            <div class="fg fg2">
-              <div class="f">
-                <label>Lien position</label>
-                <select id="h-lien" oninput="ch()">
-                  <option value="2" selected>2nd lien (HELOC Express)</option>
-                  <option value="1">1st lien HELOC</option>
-                </select>
-              </div>
-              <div class="f">
-                <label>Occupancy</label>
-                <select id="h-occ" oninput="ch()">
-                  <option value="primary" selected>Primary residence</option>
-                  <option value="second">Second home</option>
-                  <option value="investment">Investment property</option>
-                </select>
-              </div>
-            </div>
-            <div class="fg fg2">
-              <div class="f"><label>Prime rate (%)</label><input type="number" id="h-prime" value="6.75" step="0.25" oninput="ch()"></div>
-              <div class="f"><label>Broker fee (%)</label><input type="number" id="h-bpc" value="1.5" step="0.25" oninput="ch()"></div>
-            </div>
-            <div class="fg fg2">
-              <div class="f"><label>Base closing costs ($)</label><input type="number" id="h-cc" value="1800" oninput="ch()"></div>
-              <div class="f"><label>Client name</label><input type="text" id="h-cname" value="Client" oninput="ch()"></div>
-            </div>
-            <div class="fg">
-              <div class="f"><label>Your name</label><input type="text" id="h-agent" value="Nick" oninput="ch()"></div>
-            </div>
-          </div>
+      <!-- Product toggle -->
+      <div class="toolbar" style="margin-bottom:12px">
+        <div class="segment">
+          <button class="seg-btn on" id="he-tab-heloc" onclick="showHeMode('heloc')">HELOC — variable rate</button>
+          <button class="seg-btn"    id="he-tab-heloan" onclick="showHeMode('heloan')">HELOAN — fixed rate</button>
         </div>
-
-        <!-- Right: results + email -->
-        <div>
-          <div id="h-metrics" class="metrics-grid"></div>
-          <div id="h-warn" style="display:none" class="warn-box"></div>
-          <div class="card" id="h-details-card" style="margin-bottom:12px">
-            <div class="card-head"><span class="card-title">Rate details &amp; max lines</span></div>
-            <div class="card-body" id="h-details"></div>
-          </div>
-          <div>
-            <div class="email-preview-head">
-              <span class="email-hint">Edit before sending</span>
-              <button class="btn btn-primary" onclick="copyHelocEmail(event)">Copy email</button>
-            </div>
-            <div class="emailbox" id="h-emailout" contenteditable="true" style="min-height:360px"></div>
-          </div>
-        </div>
-
       </div>
-    </div>
 
-    <!-- ── HELOAN ─────────────────────────────────────────────────────── -->
-    <div class="panel" id="panel-heloan">
       <div class="heloc-layout">
 
         <!-- Left: inputs -->
         <div class="card" style="margin-bottom:0">
-          <div class="card-head"><span class="card-title">HELOAN inputs — 10-yr fixed-rate (Quorum)</span></div>
+          <div class="card-head"><span class="card-title" id="he-input-title">HELOC inputs</span></div>
           <div class="card-body">
+
+            <!-- Shared fields -->
             <div class="fg fg2">
-              <div class="f"><label>Home value ($)</label><input type="number" id="hl-val" value="420000" oninput="chl()"></div>
-              <div class="f"><label>First mortgage balance ($)</label><input type="number" id="hl-bal" value="141000" oninput="chl()"></div>
+              <div class="f"><label>Home value ($)</label><input type="number" id="he-val" value="420000" oninput="calcHE()"></div>
+              <div class="f"><label>First mortgage balance ($)</label><input type="number" id="he-bal" value="141000" oninput="calcHE()"></div>
             </div>
             <div class="fg fg2">
-              <div class="f"><label>Loan amount ($)</label><input type="number" id="hl-loan" value="195000" oninput="chl()"></div>
-              <div class="f"><label>Credit score (FICO)</label><input type="number" id="hl-fico" value="760" oninput="chl()"></div>
+              <div class="f"><label>Credit score (FICO)</label><input type="number" id="he-fico" value="760" oninput="calcHE()"></div>
+              <div class="f"><label>Broker fee (%)</label><input type="number" id="he-bpc" value="1.5" step="0.25" oninput="calcHE()"></div>
             </div>
             <div class="fg fg2">
-              <div class="f">
-                <label>Occupancy</label>
-                <select id="hl-occ" oninput="chl()">
-                  <option value="primary" selected>Primary residence</option>
-                  <option value="second">Second home</option>
-                </select>
+              <div class="f"><label>Client name</label><input type="text" id="he-cname" value="Client" oninput="calcHE()"></div>
+              <div class="f"><label>Your name</label><input type="text" id="he-agent" value="Nick" oninput="calcHE()"></div>
+            </div>
+
+            <!-- HELOC-specific fields -->
+            <div id="he-heloc-fields">
+              <div class="fg fg2">
+                <div class="f"><label>HELOC line amount ($)</label><input type="number" id="he-line" value="195000" oninput="syncHEDraw(this.value);calcHE()"></div>
+                <div class="f"><label>Initial draw ($)</label><input type="number" id="he-draw" value="195000" oninput="document.getElementById('he-draw')._dirty=true;calcHE()"></div>
               </div>
-              <div class="f">
-                <label>Loan term</label>
-                <select id="hl-term" oninput="chl()">
-                  <option value="10" selected>10 years</option>
-                  <option value="15">15 years</option>
-                  <option value="20">20 years</option>
-                </select>
+              <div class="fg fg2">
+                <div class="f">
+                  <label>Lien position</label>
+                  <select id="he-lien" oninput="calcHE()">
+                    <option value="2" selected>2nd lien (HELOC Express)</option>
+                    <option value="1">1st lien HELOC</option>
+                  </select>
+                </div>
+                <div class="f">
+                  <label>Occupancy</label>
+                  <select id="he-occ" oninput="calcHE()">
+                    <option value="primary" selected>Primary residence</option>
+                    <option value="second">Second home</option>
+                    <option value="investment">Investment property</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fg fg2">
+                <div class="f"><label>Prime rate (%)</label><input type="number" id="he-prime" value="6.75" step="0.25" oninput="calcHE()"></div>
+                <div class="f"><label>Base closing costs ($)</label><input type="number" id="he-cc" value="1800" oninput="calcHE()"></div>
               </div>
             </div>
-            <div class="fg fg2">
-              <div class="f">
-                <label>Borrower type</label>
-                <select id="hl-borrower" oninput="chl()">
-                  <option value="single" selected>Single</option>
-                  <option value="joint">Joint</option>
-                </select>
+
+            <!-- HELOAN-specific fields -->
+            <div id="he-heloan-fields" style="display:none">
+              <div class="fg fg2">
+                <div class="f"><label>Loan amount ($)</label><input type="number" id="he-loan" value="195000" oninput="calcHE()"></div>
+                <div class="f">
+                  <label>Occupancy</label>
+                  <select id="he-locc" oninput="calcHE()">
+                    <option value="primary" selected>Primary residence</option>
+                    <option value="second">Second home</option>
+                  </select>
+                </div>
               </div>
-              <div class="f"><label>Broker fee (%)</label><input type="number" id="hl-bpc" value="1.5" step="0.25" oninput="chl()"></div>
+              <div class="fg fg2">
+                <div class="f">
+                  <label>Loan term</label>
+                  <select id="he-term" oninput="calcHE()">
+                    <option value="10" selected>10 years</option>
+                    <option value="15">15 years</option>
+                    <option value="20">20 years</option>
+                  </select>
+                </div>
+                <div class="f">
+                  <label>Borrower type</label>
+                  <select id="he-borrower" oninput="calcHE()">
+                    <option value="single" selected>Single</option>
+                    <option value="joint">Joint</option>
+                  </select>
+                </div>
+              </div>
+              <div class="fg fg2">
+                <div class="f"><label>Misc closing costs ($)</label><input type="number" id="he-lcc" value="800" oninput="calcHE()"></div>
+                <div class="f"><!-- spacer --></div>
+              </div>
             </div>
-            <div class="fg fg2">
-              <div class="f"><label>Misc closing costs ($)</label><input type="number" id="hl-cc" value="800" oninput="chl()"></div>
-              <div class="f"><label>Client name</label><input type="text" id="hl-cname" value="Client" oninput="chl()"></div>
-            </div>
-            <div class="fg">
-              <div class="f"><label>Your name</label><input type="text" id="hl-agent" value="Nick" oninput="chl()"></div>
-            </div>
+
           </div>
         </div>
 
         <!-- Right: results + email -->
         <div>
-          <div id="hl-metrics" class="metrics-grid"></div>
-          <div id="hl-warn" style="display:none" class="warn-box"></div>
-          <div class="card" id="hl-details-card" style="margin-bottom:12px">
-            <div class="card-head"><span class="card-title">Rate details &amp; fees</span></div>
-            <div class="card-body" id="hl-details"></div>
+          <div id="he-metrics" class="metrics-grid"></div>
+          <div id="he-warn" style="display:none" class="warn-box"></div>
+          <div class="card" id="he-details-card" style="margin-bottom:12px">
+            <div class="card-head"><span class="card-title" id="he-details-title">Rate details &amp; max lines</span></div>
+            <div class="card-body" id="he-details"></div>
           </div>
           <div>
             <div class="email-preview-head">
               <span class="email-hint">Edit before sending</span>
-              <button class="btn btn-primary" onclick="copyHeloanEmail(event)">Copy email</button>
+              <button class="btn btn-primary" onclick="copyHEEmail(event)">Copy email</button>
             </div>
-            <div class="emailbox" id="hl-emailout" contenteditable="true" style="min-height:360px"></div>
+            <div class="emailbox" id="he-emailout" contenteditable="true" style="min-height:360px"></div>
           </div>
         </div>
 
@@ -914,8 +889,7 @@ function showTab(id, el) {
   el.classList.add('active');
   document.getElementById('panel-' + id).classList.add('active');
   if (id === 'email') ge();
-  if (id === 'heloc') ch();
-  if (id === 'heloan') chl();
+  if (id === 'he') calcHE();
   if (id === 'saved') renderScenarios();
 }
 
@@ -1643,31 +1617,49 @@ function getHelocMargin(fico, cltv, lien) {
   return { margin, ficoLabel, cltvLabel };
 }
 
-function syncDraw(v) {
-  const d = document.getElementById('h-draw');
+// ── Home equity mode ────────────────────────────────────────────────────
+let heMode = 'heloc';
+
+function showHeMode(mode) {
+  heMode = mode;
+  document.getElementById('he-heloc-fields').style.display  = mode === 'heloc'  ? '' : 'none';
+  document.getElementById('he-heloan-fields').style.display = mode === 'heloan' ? '' : 'none';
+  document.getElementById('he-tab-heloc').classList.toggle('on',  mode === 'heloc');
+  document.getElementById('he-tab-heloan').classList.toggle('on', mode === 'heloan');
+  document.getElementById('he-input-title').textContent   = mode === 'heloc'  ? 'HELOC inputs'                       : 'HELOAN inputs — fixed rate (Quorum)';
+  document.getElementById('he-details-title').textContent = mode === 'heloc'  ? 'Rate details & max lines'            : 'Rate details & fees';
+  calcHE();
+}
+
+function syncHEDraw(v) {
+  const d = document.getElementById('he-draw');
   if (!d._dirty) d.value = v;
 }
 
-function ch() {
-  const val   = gv('h-val');
-  const bal   = gv('h-bal');
-  const line  = gv('h-line');
-  const drawRaw = gv('h-draw');
-  const draw  = drawRaw > 0 ? Math.min(drawRaw, line) : line;
-  const fico  = gv('h-fico');
-  const prime = gv('h-prime');
-  const bpc   = gv('h-bpc');
-  const cc    = gv('h-cc');
-  const lien  = parseInt(document.getElementById('h-lien').value, 10);
-  const occ   = document.getElementById('h-occ').value;
-  const cname = document.getElementById('h-cname').value || 'Client';
-  const agent = document.getElementById('h-agent').value || 'Nick';
+function calcHE() {
+  if (heMode === 'heloc') ch(); else chl();
+}
 
-  const metricsEl    = document.getElementById('h-metrics');
-  const warnEl       = document.getElementById('h-warn');
-  const detailsEl    = document.getElementById('h-details');
-  const detailsCard  = document.getElementById('h-details-card');
-  const emailEl      = document.getElementById('h-emailout');
+function ch() {
+  const val   = gv('he-val');
+  const bal   = gv('he-bal');
+  const line  = gv('he-line');
+  const drawRaw = gv('he-draw');
+  const draw  = drawRaw > 0 ? Math.min(drawRaw, line) : line;
+  const fico  = gv('he-fico');
+  const prime = gv('he-prime');
+  const bpc   = gv('he-bpc');
+  const cc    = gv('he-cc');
+  const lien  = parseInt(document.getElementById('he-lien').value, 10);
+  const occ   = document.getElementById('he-occ').value;
+  const cname = document.getElementById('he-cname').value || 'Client';
+  const agent = document.getElementById('he-agent').value || 'Nick';
+
+  const metricsEl    = document.getElementById('he-metrics');
+  const warnEl       = document.getElementById('he-warn');
+  const detailsEl    = document.getElementById('he-details');
+  const detailsCard  = document.getElementById('he-details-card');
+  const emailEl      = document.getElementById('he-emailout');
 
   if (!val || val <= 0) {
     warnEl.textContent = 'Please enter a valid home value.';
@@ -1710,8 +1702,7 @@ function ch() {
   if (na) {
     metricsEl.innerHTML = mcard('CLTV', cltv.toFixed(1) + '%', (lien === 1 ? 'Max 90%' : 'Max 95%'), cltv > (lien === 1 ? 90 : 95) ? 'bad' : 'warn') +
                           mcard('Rate', 'N/A', 'Not available', 'bad') +
-                          mcard('Payment (full draw)', 'N/A', 'Interest only', '') +
-                          mcard('Payment (initial draw)', 'N/A', 'Interest only', '') +
+                          mcard('Monthly payment', 'N/A', 'Interest only', '') +
                           mcard('Total closing costs', 'N/A', 'Closing costs', '');
     detailsEl.innerHTML = '';
     detailsCard.style.display = 'none';
@@ -1735,12 +1726,14 @@ function ch() {
   // CLTV color
   const cltvCls = cltv <= 70 ? 'ok' : cltv <= 80 ? '' : cltv <= 85 ? 'warn' : 'bad';
 
+  const paySub = draw < line
+    ? 'Max at full draw: ' + fd(monthly)
+    : 'Interest only on full draw';
+
   metricsEl.innerHTML =
     mcard('CLTV', cltv.toFixed(1) + '%', (lien === 1 ? '1st lien, max 90%' : '2nd lien, max 95%'), cltvCls) +
-    mcard('Rate', totalRate.toFixed(3).replace(/\.?0+$/, '') + '%',
-          'Prime ' + prime + '% + ' + margin + '% margin', '') +
-    mcard('Payment (full draw)', fd(monthly), 'Max I/O at ' + fm(line), '') +
-    mcard('Payment (' + (draw < line ? fm(draw) : 'full draw') + ')', fd(drawMonthly), draw < line ? 'Interest only' : 'Same as full draw', draw < line ? 'ok' : '') +
+    mcard('Rate', totalRate.toFixed(3).replace(/\.?0+$/, '') + '%', 'Prime ' + prime + '% + ' + margin + '% margin', '') +
+    mcard('Monthly payment', fd(drawMonthly), paySub, '') +
     mcard('Total closing costs', fm(totalCC), fm(brokerFee) + ' broker' + (appraisalRequired ? ' + $1,500 appraisal' : ''), '');
 
   // Max lines helper
@@ -1832,15 +1825,6 @@ function ch() {
   emailEl.innerText = email;
 }
 
-function copyHelocEmail(event) {
-  const box = document.getElementById('h-emailout');
-  const btn = event.target;
-  navigator.clipboard.writeText(box.innerText).then(() => {
-    btn.innerText = 'Copied!';
-    setTimeout(() => { btn.innerText = 'Copy email'; }, 2000);
-  });
-}
-
 // ── HELOAN (Fixed-Rate Home Equity Loan — Quorum) ──────────────────────
 
 function getHeloanRate(fico, cltv) {
@@ -1870,23 +1854,23 @@ function getHeloanRate(fico, cltv) {
 }
 
 function chl() {
-  const val    = gv('hl-val');
-  const bal    = gv('hl-bal');
-  const loan   = gv('hl-loan');
-  const fico   = gv('hl-fico');
-  const bpc    = gv('hl-bpc');
-  const cc     = gv('hl-cc');
-  const term   = parseInt(document.getElementById('hl-term').value, 10);
-  const occ    = document.getElementById('hl-occ').value;
-  const btype  = document.getElementById('hl-borrower').value;
-  const cname  = document.getElementById('hl-cname').value || 'Client';
-  const agent  = document.getElementById('hl-agent').value || 'Nick';
+  const val    = gv('he-val');
+  const bal    = gv('he-bal');
+  const loan   = gv('he-loan');
+  const fico   = gv('he-fico');
+  const bpc    = gv('he-bpc');
+  const cc     = gv('he-lcc');
+  const term   = parseInt(document.getElementById('he-term').value, 10);
+  const occ    = document.getElementById('he-locc').value;
+  const btype  = document.getElementById('he-borrower').value;
+  const cname  = document.getElementById('he-cname').value || 'Client';
+  const agent  = document.getElementById('he-agent').value || 'Nick';
 
-  const metricsEl   = document.getElementById('hl-metrics');
-  const warnEl      = document.getElementById('hl-warn');
-  const detailsEl   = document.getElementById('hl-details');
-  const detailsCard = document.getElementById('hl-details-card');
-  const emailEl     = document.getElementById('hl-emailout');
+  const metricsEl   = document.getElementById('he-metrics');
+  const warnEl      = document.getElementById('he-warn');
+  const detailsEl   = document.getElementById('he-details');
+  const detailsCard = document.getElementById('he-details-card');
+  const emailEl     = document.getElementById('he-emailout');
 
   if (!val || val <= 0) {
     warnEl.textContent = 'Please enter a valid home value.';
@@ -2027,8 +2011,8 @@ function chl() {
   emailEl.innerText = email;
 }
 
-function copyHeloanEmail(event) {
-  const box = document.getElementById('hl-emailout');
+function copyHEEmail(event) {
+  const box = document.getElementById('he-emailout');
   const btn = event.target;
   navigator.clipboard.writeText(box.innerText).then(() => {
     btn.innerText = 'Copied!';
@@ -2041,8 +2025,7 @@ cq();
 buildOptInputs();
 _doBuildComparison();  // call directly on init (no debounce needed)
 renderScenarios();
-ch();
-chl();
+calcHE();
 </script>
 </body>
 </html>
