@@ -495,6 +495,29 @@ body {
 .modal-btns button.primary { background: var(--c-accent); color: #fff; border-color: var(--c-accent); }
 .modal-btns button.primary:hover { background: #1D4ED8; }
 .modal-btns button:not(.primary):hover { background: var(--c-bg3); }
+
+/* ── HELOC layout ────────────────────────────────────────────────────── */
+.heloc-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 12px; align-items: start; }
+@media (max-width: 720px) { .heloc-layout { grid-template-columns: 1fr; } }
+
+/* ── Warn box ────────────────────────────────────────────────────────── */
+.warn-box {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-left: 3px solid var(--c-bad);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-bad);
+  margin-bottom: 12px;
+}
+
+/* ── HELOC details table ─────────────────────────────────────────────── */
+.h-detail-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid var(--c-border3); color: var(--c-text2); }
+.h-detail-row:last-child { border-bottom: none; }
+.h-detail-lbl { color: var(--c-text3); }
+.h-detail-val { font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
 </style>
 </head>
 <body>
@@ -515,6 +538,7 @@ body {
     <button class="tab active" onclick="showTab('qualify',this)"><span class="tab-icon">◎</span>Qualify &amp; quote</button>
     <button class="tab" onclick="showTab('compare',this)"><span class="tab-icon">⇄</span>Option builder</button>
     <button class="tab" onclick="showTab('email',this)"><span class="tab-icon">✉</span>Email generator</button>
+    <button class="tab" onclick="showTab('heloc',this)"><span class="tab-icon">⬡</span>HELOC</button>
     <button class="tab" onclick="showTab('checklist',this)"><span class="tab-icon">☑</span>Lock checklist</button>
     <button class="tab" onclick="showTab('saved',this)"><span class="tab-icon">◈</span>Saved scenarios</button>
   </div>
@@ -642,6 +666,73 @@ body {
       </div>
     </div>
 
+    <!-- ── HELOC ─────────────────────────────────────────────────────── -->
+    <div class="panel" id="panel-heloc">
+      <div class="heloc-layout">
+
+        <!-- Left: inputs -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><span class="card-title">HELOC inputs</span></div>
+          <div class="card-body">
+            <div class="fg fg2">
+              <div class="f"><label>Home value ($)</label><input type="number" id="h-val" value="420000" oninput="ch()"></div>
+              <div class="f"><label>First mortgage balance ($)</label><input type="number" id="h-bal" value="141000" oninput="ch()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>HELOC line amount ($)</label><input type="number" id="h-line" value="195000" oninput="ch()"></div>
+              <div class="f"><label>Credit score (FICO)</label><input type="number" id="h-fico" value="760" oninput="ch()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f">
+                <label>Lien position</label>
+                <select id="h-lien" oninput="ch()">
+                  <option value="2" selected>2nd lien (HELOC Express)</option>
+                  <option value="1">1st lien HELOC</option>
+                </select>
+              </div>
+              <div class="f">
+                <label>Occupancy</label>
+                <select id="h-occ" oninput="ch()">
+                  <option value="primary" selected>Primary residence</option>
+                  <option value="second">Second home</option>
+                  <option value="investment">Investment property</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Prime rate (%)</label><input type="number" id="h-prime" value="6.75" step="0.25" oninput="ch()"></div>
+              <div class="f"><label>Broker fee (%)</label><input type="number" id="h-bpc" value="1.5" step="0.25" oninput="ch()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Base closing costs ($)</label><input type="number" id="h-cc" value="1800" oninput="ch()"></div>
+              <div class="f"><label>Client name</label><input type="text" id="h-cname" value="Client" oninput="ch()"></div>
+            </div>
+            <div class="fg">
+              <div class="f"><label>Your name</label><input type="text" id="h-agent" value="Nick" oninput="ch()"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: results + email -->
+        <div>
+          <div id="h-metrics" class="metrics-grid"></div>
+          <div id="h-warn" style="display:none" class="warn-box"></div>
+          <div class="card" id="h-details-card" style="margin-bottom:12px">
+            <div class="card-head"><span class="card-title">Rate details &amp; max lines</span></div>
+            <div class="card-body" id="h-details"></div>
+          </div>
+          <div>
+            <div class="email-preview-head">
+              <span class="email-hint">Edit before sending</span>
+              <button class="btn btn-primary" onclick="copyHelocEmail(event)">Copy email</button>
+            </div>
+            <div class="emailbox" id="h-emailout" contenteditable="true" style="min-height:360px"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ── CHECKLIST ──────────────────────────────────────────────────── -->
     <div class="panel" id="panel-checklist">
       <div class="checklist-layout">
@@ -745,6 +836,7 @@ function showTab(id, el) {
   el.classList.add('active');
   document.getElementById('panel-' + id).classList.add('active');
   if (id === 'email') ge();
+  if (id === 'heloc') ch();
   if (id === 'saved') renderScenarios();
 }
 
