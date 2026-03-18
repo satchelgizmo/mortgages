@@ -1118,27 +1118,24 @@ function ge() {
       o.ccTotal = o.cc + o.pts;
     });
 
-    // Build padEnd-aligned comparison table for email
-    const colW = 16;
-    const labelW = 26;
-    const tRow = (label, vals) =>
-      label.padEnd(labelW) + vals.map(v => v.padEnd(colW)).join('') + '\n';
-    const tDivider = '-'.repeat(labelW + colW * opts.length) + '\n';
-    const headers = opts.map(o => o.label);
-    let optBlocks =
-      tRow('', headers) +
-      tDivider +
-      tRow('Rate', opts.map(o => o.rate + '%')) +
-      tRow('Monthly P&I', opts.map(o => '$' + fd(o.pi))) +
-      tRow('Monthly savings', opts.map(o => o.savings > 0 ? '$' + fd(o.savings) + '/mo' : '—')) +
-      tRow('Loan amount', opts.map(o => '$' + fm(o.loan))) +
-      tRow('Closing costs + fees', opts.map(o => '$' + fm(o.ccTotal))) +
-      tRow('Lender credit', opts.map(o => o.lc > 0 ? '$' + fm(o.lc) : 'none')) +
-      tRow('Cash at closing', opts.map(o => {
+    // Build tab-separated table (tabs align in email clients and paste destinations)
+    const T = '\t';
+    const tLine = (label, vals) => label + T + vals.join(T) + '\n';
+
+    const optTable =
+      tLine('', opts.map(o => o.label)) +
+      tLine('Rate', opts.map(o => o.rate + '%')) +
+      tLine('Monthly Principal and Interest', opts.map(o => fd(o.pi))) +
+      tLine('Monthly Savings vs. Current', opts.map(o => o.savings > 0 ? fd(o.savings) + '/mo' : '$0.00')) +
+      tLine('Loan Amount', opts.map(o => fd(o.loan))) +
+      tLine('Estimated Closing Costs + Origination', opts.map(o => fd(o.ccTotal))) +
+      tLine('Estimated Escrows and Other Costs', opts.map(o => fd(o.esc))) +
+      tLine('Lender Credit', opts.map(o => fd(o.lc))) +
+      tLine('Estimated Payoff Amount', opts.map(o => fd(o.payoff))) +
+      tLine('Cash at Closing', opts.map(o => {
         const cd = Math.abs(o.cashDue);
-        return (o.cashDue <= 0 ? '$' + fm(cd) + ' back' : '$' + fm(cd) + ' due');
-      })) +
-      tDivider + '\n';
+        return o.cashDue <= 0 ? fd(cd) + ' received' : fd(cd) + ' due';
+      }));
 
     // Savings vs current for the lowest-payment option
     const bestPmt = opts.reduce((a, b) => a.pi < b.pi ? a : b);
@@ -1149,28 +1146,24 @@ function ge() {
     const bestLc = opts.reduce((a, b) => a.lc > b.lc ? a : b);
     let insight = '';
     if (bestLc.lc > 0 && bestLc !== bestPmt) {
-      const diff = bestLc.pi - bestPmt.pi;  // extra cost per month for the lender-credit option
-      // Breakeven = (points paid for lower rate + lender credit given up) / monthly payment difference
+      const diff = bestLc.pi - bestPmt.pi;
       const be   = diff > 0 ? Math.round((bestPmt.pts + bestLc.lc) / diff) : null;
       insight =
-        'A note on the tradeoff: ' + bestLc.label + ' puts ' + fm(bestLc.lc) +
-        ' in your pocket on day one through the lender credit. ' +
-        bestPmt.label + '\'s lower rate costs an extra ' + fd(diff) + '/month, ' +
-        'and you wouldn\'t break even on that difference for ' +
+        bestLc.label + ' gives you ' + fd(bestLc.lc) + ' back at closing through the lender credit, reducing your cash needed on day one. ' +
+        bestPmt.label + '\'s lower rate costs an extra ' + fd(diff) + '/month, and you wouldn\'t break even on that difference for ' +
         (be ? be + ' months (' + (be / 12).toFixed(1) + ' years)' : 'a very long time') +
-        ', well beyond the typical refinance horizon. Most borrowers are better served by the immediate cash.\n\n';
+        '. Given a typical refinance horizon, the option with the credit tends to serve most borrowers better.\n\n';
     }
 
     email =
       'Hi ' + name + ',\n\n' +
-      'Here\'s a side-by-side breakdown of the ' + numOpts + ' options we put together based on today\'s rates.\n\n' +
-      'Your current loan is ' + or_ + '% at ' + oldPI + '/month P&I. ' +
-      'Even the highest rate below saves you ' + fd(savNum) + '/month (' + annSav + '/year).\n\n' +
-      optBlocks +
+      'The table below illustrates the pertinent details and differences between the ' +
+      (numOpts === 2 ? 'two' : numOpts === 3 ? 'three' : numOpts) +
+      ' options. Please keep in mind that these are still estimates subject to change, but they should be very close to the actual closing figures.\n\n' +
+      optTable + '\n' +
       insight +
-      (numOpts === 2 ? 'Both options carry' : 'All three options carry') + ' the same escrow setup at closing. That\'s your own money going into your new escrow account, ' +
-      'not a fee. Your existing escrow balance comes back to you within 20 days of payoff.\n\n' +
-      'Happy to walk through any of these in detail. Just let me know which direction feels right and we\'ll get moving.\n\n' +
+      (numOpts === 2 ? 'Both options' : 'All options') + ' include the same escrow setup at closing. That is your own money going into your new escrow account, not a fee. Your existing escrow balance comes back to you within 20 days of payoff.\n\n' +
+      'I hope this helps. Please let me know which option you prefer and we will handle the rest.\n\n' +
       'Thanks,\n' + agent;
   }
 
