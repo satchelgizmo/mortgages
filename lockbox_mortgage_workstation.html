@@ -518,6 +518,9 @@ body {
 .h-detail-row:last-child { border-bottom: none; }
 .h-detail-lbl { color: var(--c-text3); }
 .h-detail-val { font-weight: 600; color: var(--c-text); font-variant-numeric: tabular-nums; }
+
+/* 5-column metrics override for HELOC (adds initial-draw payment card) */
+#h-metrics { grid-template-columns: repeat(5, 1fr); }
 </style>
 </head>
 <body>
@@ -539,6 +542,7 @@ body {
     <button class="tab" onclick="showTab('compare',this)"><span class="tab-icon">⇄</span>Option builder</button>
     <button class="tab" onclick="showTab('email',this)"><span class="tab-icon">✉</span>Email generator</button>
     <button class="tab" onclick="showTab('heloc',this)"><span class="tab-icon">⬡</span>HELOC</button>
+    <button class="tab" onclick="showTab('heloan',this)"><span class="tab-icon">⬢</span>HELOAN</button>
     <button class="tab" onclick="showTab('checklist',this)"><span class="tab-icon">☑</span>Lock checklist</button>
     <button class="tab" onclick="showTab('saved',this)"><span class="tab-icon">◈</span>Saved scenarios</button>
   </div>
@@ -678,8 +682,9 @@ body {
               <div class="f"><label>Home value ($)</label><input type="number" id="h-val" value="420000" oninput="ch()"></div>
               <div class="f"><label>First mortgage balance ($)</label><input type="number" id="h-bal" value="141000" oninput="ch()"></div>
             </div>
-            <div class="fg fg2">
-              <div class="f"><label>HELOC line amount ($)</label><input type="number" id="h-line" value="195000" oninput="ch()"></div>
+            <div class="fg fg3">
+              <div class="f"><label>HELOC line amount ($)</label><input type="number" id="h-line" value="195000" oninput="syncDraw(this.value);ch()"></div>
+              <div class="f"><label>Initial draw ($)</label><input type="number" id="h-draw" value="195000" oninput="document.getElementById('h-draw')._dirty=true;ch()"></div>
               <div class="f"><label>Credit score (FICO)</label><input type="number" id="h-fico" value="760" oninput="ch()"></div>
             </div>
             <div class="fg fg2">
@@ -727,6 +732,79 @@ body {
               <button class="btn btn-primary" onclick="copyHelocEmail(event)">Copy email</button>
             </div>
             <div class="emailbox" id="h-emailout" contenteditable="true" style="min-height:360px"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── HELOAN ─────────────────────────────────────────────────────── -->
+    <div class="panel" id="panel-heloan">
+      <div class="heloc-layout">
+
+        <!-- Left: inputs -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><span class="card-title">HELOAN inputs — 10-yr fixed-rate (Quorum)</span></div>
+          <div class="card-body">
+            <div class="fg fg2">
+              <div class="f"><label>Home value ($)</label><input type="number" id="hl-val" value="420000" oninput="chl()"></div>
+              <div class="f"><label>First mortgage balance ($)</label><input type="number" id="hl-bal" value="141000" oninput="chl()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Loan amount ($)</label><input type="number" id="hl-loan" value="195000" oninput="chl()"></div>
+              <div class="f"><label>Credit score (FICO)</label><input type="number" id="hl-fico" value="760" oninput="chl()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f">
+                <label>Occupancy</label>
+                <select id="hl-occ" oninput="chl()">
+                  <option value="primary" selected>Primary residence</option>
+                  <option value="second">Second home</option>
+                </select>
+              </div>
+              <div class="f">
+                <label>Loan term</label>
+                <select id="hl-term" oninput="chl()">
+                  <option value="10" selected>10 years</option>
+                  <option value="15">15 years</option>
+                  <option value="20">20 years</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg fg2">
+              <div class="f">
+                <label>Borrower type</label>
+                <select id="hl-borrower" oninput="chl()">
+                  <option value="single" selected>Single</option>
+                  <option value="joint">Joint</option>
+                </select>
+              </div>
+              <div class="f"><label>Broker fee (%)</label><input type="number" id="hl-bpc" value="1.5" step="0.25" oninput="chl()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Misc closing costs ($)</label><input type="number" id="hl-cc" value="800" oninput="chl()"></div>
+              <div class="f"><label>Client name</label><input type="text" id="hl-cname" value="Client" oninput="chl()"></div>
+            </div>
+            <div class="fg">
+              <div class="f"><label>Your name</label><input type="text" id="hl-agent" value="Nick" oninput="chl()"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: results + email -->
+        <div>
+          <div id="hl-metrics" class="metrics-grid"></div>
+          <div id="hl-warn" style="display:none" class="warn-box"></div>
+          <div class="card" id="hl-details-card" style="margin-bottom:12px">
+            <div class="card-head"><span class="card-title">Rate details &amp; fees</span></div>
+            <div class="card-body" id="hl-details"></div>
+          </div>
+          <div>
+            <div class="email-preview-head">
+              <span class="email-hint">Edit before sending</span>
+              <button class="btn btn-primary" onclick="copyHeloanEmail(event)">Copy email</button>
+            </div>
+            <div class="emailbox" id="hl-emailout" contenteditable="true" style="min-height:360px"></div>
           </div>
         </div>
 
@@ -837,6 +915,7 @@ function showTab(id, el) {
   document.getElementById('panel-' + id).classList.add('active');
   if (id === 'email') ge();
   if (id === 'heloc') ch();
+  if (id === 'heloan') chl();
   if (id === 'saved') renderScenarios();
 }
 
@@ -1564,10 +1643,17 @@ function getHelocMargin(fico, cltv, lien) {
   return { margin, ficoLabel, cltvLabel };
 }
 
+function syncDraw(v) {
+  const d = document.getElementById('h-draw');
+  if (!d._dirty) d.value = v;
+}
+
 function ch() {
   const val   = gv('h-val');
   const bal   = gv('h-bal');
   const line  = gv('h-line');
+  const drawRaw = gv('h-draw');
+  const draw  = drawRaw > 0 ? Math.min(drawRaw, line) : line;
   const fico  = gv('h-fico');
   const prime = gv('h-prime');
   const bpc   = gv('h-bpc');
@@ -1624,7 +1710,8 @@ function ch() {
   if (na) {
     metricsEl.innerHTML = mcard('CLTV', cltv.toFixed(1) + '%', (lien === 1 ? 'Max 90%' : 'Max 95%'), cltv > (lien === 1 ? 90 : 95) ? 'bad' : 'warn') +
                           mcard('Rate', 'N/A', 'Not available', 'bad') +
-                          mcard('Monthly payment', 'N/A', 'Interest only', '') +
+                          mcard('Payment (full draw)', 'N/A', 'Interest only', '') +
+                          mcard('Payment (initial draw)', 'N/A', 'Interest only', '') +
                           mcard('Total closing costs', 'N/A', 'Closing costs', '');
     detailsEl.innerHTML = '';
     detailsCard.style.display = 'none';
@@ -1639,8 +1726,11 @@ function ch() {
   const totalRate  = Math.max(rawRate, 4.95);
   const floored    = totalRate > rawRate;
   const monthly    = line * (totalRate / 100) / 12;
+  const drawMonthly = draw * (totalRate / 100) / 12;
   const brokerFee  = line * (bpc / 100);
-  const totalCC    = cc + brokerFee;
+  const appraisalRequired = line >= 250000;
+  const appraisalCost = appraisalRequired ? 1500 : 0;
+  const totalCC    = cc + brokerFee + appraisalCost;
 
   // CLTV color
   const cltvCls = cltv <= 70 ? 'ok' : cltv <= 80 ? '' : cltv <= 85 ? 'warn' : 'bad';
@@ -1649,8 +1739,9 @@ function ch() {
     mcard('CLTV', cltv.toFixed(1) + '%', (lien === 1 ? '1st lien, max 90%' : '2nd lien, max 95%'), cltvCls) +
     mcard('Rate', totalRate.toFixed(3).replace(/\.?0+$/, '') + '%',
           'Prime ' + prime + '% + ' + margin + '% margin', '') +
-    mcard('Monthly payment', fd(monthly), 'Interest only on full draw', '') +
-    mcard('Total closing costs', fm(totalCC), fm(brokerFee) + ' broker + ' + fm(cc) + ' base', '');
+    mcard('Payment (full draw)', fd(monthly), 'Max I/O at ' + fm(line), '') +
+    mcard('Payment (' + (draw < line ? fm(draw) : 'full draw') + ')', fd(drawMonthly), draw < line ? 'Interest only' : 'Same as full draw', draw < line ? 'ok' : '') +
+    mcard('Total closing costs', fm(totalCC), fm(brokerFee) + ' broker' + (appraisalRequired ? ' + $1,500 appraisal' : ''), '');
 
   // Max lines helper
   function maxLine(ltv) { return Math.max(0, val * (ltv / 100) - bal); }
@@ -1676,6 +1767,12 @@ function ch() {
   detailsHtml +=
     '<div class="h-detail-row"><span class="h-detail-lbl">FICO band / CLTV band</span>' +
     '<span class="h-detail-val">' + lookup.ficoLabel + ' / ' + lookup.cltvLabel + '</span></div>';
+
+  if (appraisalRequired) {
+    detailsHtml +=
+      '<div class="h-detail-row"><span class="h-detail-lbl">Appraisal + title overlay</span>' +
+      '<span class="h-detail-val">~$1,500 (line ≥ $250k)</span></div>';
+  }
 
   detailsHtml +=
     '<div class="h-detail-row"><span class="h-detail-lbl">Max line at 80% CLTV</span>' +
@@ -1709,7 +1806,9 @@ function ch() {
     prime + '%) plus ' + marginStr + '%, or ' + rateStr + '% total.\n\n' +
     'There are about ' + fm(totalCC) + ' in estimated closing costs, including a ' + bpc +
     '% broker fee based on the line amount, that get charged to the line at closing. ' +
-    'We should not need to order a full appraisal, just an automated valuation report. ' +
+    (appraisalRequired
+      ? 'At this line amount a full appraisal and title work will be required, which adds approximately $1,500 to the closing costs. '
+      : 'We should not need to order a full appraisal, just an automated valuation report. ') +
     'If the value comes back less than our estimate we may need to adjust the rate or line amount. ' +
     'There is no minimum draw required or prepayment penalty for this HELOC program.\n\n' +
     'Payments are interest-only based on the balance you\'ve drawn for the first 10 years. ' +
@@ -1718,6 +1817,10 @@ function ch() {
     'To calculate an estimate of your payment, take the balance times the rate and divide it by 12. ' +
     'Your interest only payment on the entire HELOC amount of ' + fm(line) + ' will be about ' +
     fd(monthly) + '/month (' + fm(line) + ' * ' + rateDecimalStr + ' / 12). ' +
+    (draw < line
+      ? 'If you start with an initial draw of ' + fm(draw) + ' your payment would be about ' + fd(drawMonthly) + '/month. ' +
+        'You can always draw more later, up to the full ' + fm(line) + ' line, and the payment adjusts accordingly.\n\n'
+      : '\n') +
     'We also offer fixed rate second mortgages that often come at a lower rate than the HELOC. ' +
     'If you plan on drawing the entire HELOC amount at closing it may make more sense to skip the interest only draw period and go with a HELOAN instead. ' +
     'If you would like me to work up a quote for that, just let me know.\n\n' +
@@ -1738,12 +1841,208 @@ function copyHelocEmail(event) {
   });
 }
 
+// ── HELOAN (Fixed-Rate Home Equity Loan — Quorum) ──────────────────────
+
+function getHeloanRate(fico, cltv) {
+  let rates, maxLoan, ficoLabel;
+  if      (fico >= 800) { rates = [6.375, 6.375, 7.125,  7.750,  8.875];  maxLoan = 500000; ficoLabel = '800+';    }
+  else if (fico >= 780) { rates = [6.500, 6.500, 7.250,  7.750,  8.875];  maxLoan = 500000; ficoLabel = '780-799'; }
+  else if (fico >= 760) { rates = [6.500, 6.500, 7.250,  7.750,  8.875];  maxLoan = 500000; ficoLabel = '760-779'; }
+  else if (fico >= 740) { rates = [7.000, 7.000, 7.375,  8.000,  9.125];  maxLoan = 500000; ficoLabel = '740-759'; }
+  else if (fico >= 720) { rates = [7.250, 7.250, 7.625,  8.250,  9.625];  maxLoan = 500000; ficoLabel = '720-739'; }
+  else if (fico >= 700) { rates = [7.500, 7.500, 7.875,  8.750, 10.375];  maxLoan = 500000; ficoLabel = '700-719'; }
+  else if (fico >= 680) { rates = [7.750, 7.875, 8.500, 10.375, 11.725];  maxLoan = 500000; ficoLabel = '680-699'; }
+  else if (fico >= 660) { rates = [9.250, 9.625, 10.125, null,   null];   maxLoan = 200000; ficoLabel = '660-679'; }
+  else if (fico >= 640) { rates = [10.125, 10.500, 11.125, null, null];   maxLoan = 100000; ficoLabel = '640-659'; }
+  else return null;
+
+  let col, cltvLabel;
+  if      (cltv <= 60) { col = 0; cltvLabel = '0-60%';  }
+  else if (cltv <= 70) { col = 1; cltvLabel = '60-70%'; }
+  else if (cltv <= 80) { col = 2; cltvLabel = '70-80%'; }
+  else if (cltv <= 85) { col = 3; cltvLabel = '80-85%'; }
+  else if (cltv <= 90) { col = 4; cltvLabel = '85-90%'; }
+  else return null;
+
+  const rate = rates[col];
+  if (rate === null) return null;
+  return { rate, ficoLabel, cltvLabel, maxLoan };
+}
+
+function chl() {
+  const val    = gv('hl-val');
+  const bal    = gv('hl-bal');
+  const loan   = gv('hl-loan');
+  const fico   = gv('hl-fico');
+  const bpc    = gv('hl-bpc');
+  const cc     = gv('hl-cc');
+  const term   = parseInt(document.getElementById('hl-term').value, 10);
+  const occ    = document.getElementById('hl-occ').value;
+  const btype  = document.getElementById('hl-borrower').value;
+  const cname  = document.getElementById('hl-cname').value || 'Client';
+  const agent  = document.getElementById('hl-agent').value || 'Nick';
+
+  const metricsEl   = document.getElementById('hl-metrics');
+  const warnEl      = document.getElementById('hl-warn');
+  const detailsEl   = document.getElementById('hl-details');
+  const detailsCard = document.getElementById('hl-details-card');
+  const emailEl     = document.getElementById('hl-emailout');
+
+  if (!val || val <= 0) {
+    warnEl.textContent = 'Please enter a valid home value.';
+    warnEl.style.display = 'block';
+    metricsEl.innerHTML = '';
+    detailsEl.innerHTML = '';
+    emailEl.innerText = '';
+    return;
+  }
+
+  const cltv   = (bal + loan) / val * 100;
+  const lookup = getHeloanRate(fico, cltv);
+
+  // Rate adjustments
+  const adjustments = [];
+  let adjTotal = 0;
+  if (loan < 100000)    { adjustments.push('Loan < $100k (+0.250%)');  adjTotal += 0.250; }
+  if (occ === 'second') { adjustments.push('Second home (+0.250%)');    adjTotal += 0.250; }
+  if (term === 15)      { adjustments.push('15-year term (+0.250%)');   adjTotal += 0.250; }
+  if (term === 20)      { adjustments.push('20-year term (+0.375%)');   adjTotal += 0.375; }
+
+  const maxLoanExceeded = lookup && loan > lookup.maxLoan;
+  const na = !lookup || maxLoanExceeded;
+  let naReason = '';
+  if (!lookup) {
+    naReason = 'Rate not available for this FICO/CLTV combination.';
+  } else if (maxLoanExceeded) {
+    naReason = 'Loan amount exceeds max (' + fm(lookup.maxLoan) + ') for FICO ' + lookup.ficoLabel + '.';
+  }
+
+  warnEl.style.display = na ? 'block' : 'none';
+  warnEl.textContent   = na ? naReason : '';
+
+  if (na) {
+    const cltvCls = cltv > 90 ? 'bad' : 'warn';
+    metricsEl.innerHTML = mcard('CLTV', cltv.toFixed(1) + '%', 'Max 90%', cltvCls) +
+                          mcard('Rate', 'N/A', 'Not available', 'bad') +
+                          mcard('Monthly payment', 'N/A', term + '-yr fixed', '') +
+                          mcard('Total closing costs', 'N/A', 'Closing costs', '');
+    detailsEl.innerHTML = '';
+    detailsCard.style.display = 'none';
+    emailEl.innerText = '';
+    return;
+  }
+
+  detailsCard.style.display = '';
+
+  const baseRate  = lookup.rate;
+  const totalRate = baseRate + adjTotal;
+  const monthly   = pmt(totalRate, term * 12, loan);
+
+  // Fees
+  const creditReportFee  = btype === 'joint' ? 174.30 : 87.15;
+  const lenderFees       = 495 + 100 + 6 + creditReportFee; // origination + processing + flood cert + credit report
+  const brokerFee        = loan * (bpc / 100);
+  const appraisalRequired = loan >= 250000;
+  const appraisalCost    = appraisalRequired ? 1500 : 0;
+  const totalCC          = lenderFees + cc + brokerFee + appraisalCost;
+
+  const cltvCls = cltv <= 70 ? 'ok' : cltv <= 80 ? '' : cltv <= 85 ? 'warn' : 'bad';
+
+  metricsEl.innerHTML =
+    mcard('CLTV', cltv.toFixed(1) + '%', 'Max 90% (2nd lien)', cltvCls) +
+    mcard('Rate', totalRate.toFixed(3).replace(/\.?0+$/, '') + '%', term + '-yr fixed rate', '') +
+    mcard('Monthly payment', fd(monthly), 'Fully amortizing', '') +
+    mcard('Total closing costs', fm(Math.round(totalCC)), fm(Math.round(brokerFee)) + ' broker + ' + fm(Math.round(lenderFees)) + ' lender', '');
+
+  // Details
+  let detailsHtml =
+    '<div class="h-detail-row"><span class="h-detail-lbl">Rate breakdown</span>' +
+    '<span class="h-detail-val">Base ' + baseRate + '%' +
+    (adjTotal > 0 ? ' + ' + adjTotal.toFixed(3).replace(/\.?0+$/, '') + '% adjustments' : '') +
+    ' = ' + totalRate.toFixed(3).replace(/\.?0+$/, '') + '%</span></div>';
+
+  if (adjustments.length > 0) {
+    detailsHtml +=
+      '<div class="h-detail-row"><span class="h-detail-lbl">Adjustments</span>' +
+      '<span class="h-detail-val">' + adjustments.join(', ') + '</span></div>';
+  }
+
+  detailsHtml +=
+    '<div class="h-detail-row"><span class="h-detail-lbl">FICO band / CLTV band</span>' +
+    '<span class="h-detail-val">' + lookup.ficoLabel + ' / ' + lookup.cltvLabel + '</span></div>' +
+    '<div class="h-detail-row"><span class="h-detail-lbl">Max loan (this FICO)</span>' +
+    '<span class="h-detail-val">' + fm(lookup.maxLoan) + '</span></div>' +
+    '<div class="h-detail-row"><span class="h-detail-lbl">Lender fees (orig + proc + flood + credit)</span>' +
+    '<span class="h-detail-val">$495 + $100 + $6 + ' + fd(creditReportFee) + ' = ' + fm(Math.round(lenderFees)) + '</span></div>' +
+    '<div class="h-detail-row"><span class="h-detail-lbl">Broker fee (' + bpc + '%)</span>' +
+    '<span class="h-detail-val">' + fm(Math.round(brokerFee)) + '</span></div>';
+
+  if (appraisalRequired) {
+    detailsHtml +=
+      '<div class="h-detail-row"><span class="h-detail-lbl">Appraisal + title overlay</span>' +
+      '<span class="h-detail-val">~$1,500 (loan ≥ $250k)</span></div>';
+  }
+
+  if (cc > 0) {
+    detailsHtml +=
+      '<div class="h-detail-row"><span class="h-detail-lbl">Misc closing costs</span>' +
+      '<span class="h-detail-val">' + fm(cc) + '</span></div>';
+  }
+
+  detailsEl.innerHTML = detailsHtml;
+
+  // Email
+  const tod      = new Date().getHours() < 12 ? 'morning' : 'afternoon';
+  const balStr   = bal === 0 ? 'nothing' : fm(bal);
+  const rateStr  = totalRate.toFixed(3).replace(/\.?0+$/, '');
+
+  const email =
+    'Good ' + tod + ', ' + cname + ',\n\n' +
+    'It\'s great to meet you. I am excited to be able to help you put your home equity to work!\n\n' +
+    'Your home should be worth an estimated ' + fm(val) + ' and you currently owe ' + balStr + ' on your first mortgage. A ' +
+    fm(loan) + ' fixed-rate home equity loan puts you right at ' + cltv.toFixed(1) + '% Combined Loan To Value (CLTV). ' +
+    'Based on that CLTV and your credit score of ' + fico + ', a ' + fm(loan) + ' loan is currently at ' + rateStr + '% — ' +
+    'fixed for the full ' + term + '-year term.\n\n' +
+    'Your monthly payment would be about ' + fd(monthly) + '/month. Unlike a HELOC, this is a fully amortizing payment, ' +
+    'meaning you pay both principal and interest each month and the balance pays to zero at the end of ' + term + ' years. ' +
+    'Because the rate is fixed, your payment will never change regardless of what happens to Prime or market rates.\n\n' +
+    'There are about ' + fm(Math.round(totalCC)) + ' in estimated closing costs, including a ' + bpc +
+    '% broker fee based on the loan amount' +
+    (appraisalRequired
+      ? ' and a full appraisal and title work required at this loan amount (approximately $1,500)'
+      : '') +
+    '. All fees except the appraisal — if one is required — are deducted from the loan at closing, so there is nothing out of pocket at settlement. ' +
+    (appraisalRequired
+      ? 'The appraisal fee is due at the time of application. '
+      : 'We should not need to order a full appraisal, just an automated valuation report. ') +
+    'If the value comes back less than our estimate we may need to adjust the rate or loan amount.\n\n' +
+    'We also offer a variable-rate HELOC if you would prefer interest-only payments during a 10-year draw period. ' +
+    'The HELOC often comes at a higher rate than the HELOAN but gives you more flexibility since you only pay interest on what you have drawn. ' +
+    'Just let me know if you would like a comparison on both.\n\n' +
+    'If you have any questions, just ask. I have updated your task list in the ROM portal with the documents we will need to verify that you will qualify at the current terms. ' +
+    'Once received we will get your loan disclosed and submitted to underwriting for approval. ' +
+    'We can get this closed for you in about 3 weeks. I am looking forward to working with you!\n\n' +
+    'Thanks,\n' + agent;
+
+  emailEl.innerText = email;
+}
+
+function copyHeloanEmail(event) {
+  const box = document.getElementById('hl-emailout');
+  const btn = event.target;
+  navigator.clipboard.writeText(box.innerText).then(() => {
+    btn.innerText = 'Copied!';
+    setTimeout(() => { btn.innerText = 'Copy email'; }, 2000);
+  });
+}
+
 // ── Init ───────────────────────────────────────────────────────────────
 cq();
 buildOptInputs();
 _doBuildComparison();  // call directly on init (no debounce needed)
 renderScenarios();
 ch();
+chl();
 </script>
 </body>
 </html>
