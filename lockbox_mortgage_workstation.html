@@ -386,29 +386,33 @@ body {
 .btn-primary:hover { opacity: .87; }
 
 /* ── Checklist ──────────────────────────────────────────────────────── */
-.checklist-layout { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; align-items: start; }
-.step-row {
-  display: flex; gap: 12px; align-items: flex-start;
-  padding: 11px 0; border-bottom: 1px solid var(--c-border3);
+.checklist-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.cl-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0; border-bottom: 1px solid var(--c-border3);
+  font-size: 13.5px; color: var(--c-text2);
+  cursor: pointer; user-select: none;
 }
-.step-row:last-child { border-bottom: none; padding-bottom: 0; }
-.snum {
-  width: 24px; height: 24px; border-radius: 50%;
-  background: var(--c-bg3); border: 1px solid var(--c-border2);
+.cl-item:last-child { border-bottom: none; }
+.cl-item input { display: none; }
+.cl-box {
+  width: 16px; height: 16px; flex-shrink: 0;
+  border: 1.5px solid var(--c-border);
+  border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 11px; font-weight: 700; color: var(--c-text3);
-  flex-shrink: 0; margin-top: 1px;
+  transition: background .12s, border-color .12s;
+  font-size: 10px; color: #fff; font-weight: 700;
 }
-.sc h4 { font-size: 13.5px; font-weight: 600; color: var(--c-text); margin-bottom: 4px; }
-.sc p  { font-size: 12.5px; color: var(--c-text2); line-height: 1.6; }
-.chk { list-style: none; }
-.chk li {
-  display: flex; gap: 10px; align-items: baseline;
-  font-size: 13.5px; padding: 8px 0;
-  border-bottom: 1px solid var(--c-border3); color: var(--c-text);
+.cl-item input:checked ~ .cl-box { background: var(--c-ok); border-color: var(--c-ok); }
+.cl-item input:checked ~ .cl-box::after { content: '✓'; }
+.cl-item input:checked ~ .cl-text { color: var(--c-text3); text-decoration: line-through; }
+.cl-reset {
+  font-size: 11px; padding: 2px 8px; border-radius: 99px;
+  background: transparent; color: var(--c-text3);
+  border: 1px solid var(--c-border); cursor: pointer;
+  font-family: var(--font);
 }
-.chk li:last-child { border-bottom: none; }
-.ck { color: var(--c-ok); font-size: 13px; flex-shrink: 0; font-weight: 700; }
+.cl-reset:hover { color: var(--c-text2); border-color: var(--c-border); background: var(--c-bg3); }
 
 /* ── Email summary widget ────────────────────────────────────────────── */
 .e-summary {
@@ -804,34 +808,38 @@ body {
       <div class="checklist-layout">
 
         <div class="card" style="margin-bottom:0">
-          <div class="card-head"><span class="card-title">Lead to lock — sequence</span></div>
-          <div class="card-body">
-            <div class="step-row"><div class="snum">1</div><div class="sc"><h4>Same-day response with full scenario</h4><p>Current loan recap, new payment, LTV improvement, monthly savings, and the no-cash-due path — all in the first reply. Use the Email Generator tab.</p></div></div>
-            <div class="step-row"><div class="snum">2</div><div class="sc"><h4>Separate escrows from closing costs in every quote</h4><p>Escrows aren't a fee — they're the client's own money going into their new account. They get the old balance back within 20 days. Show this proactively so the gross number never lands as a shock.</p></div></div>
-            <div class="step-row"><div class="snum">3</div><div class="sc"><h4>Issue disclosures the same hour credit is authorized</h4><p>Don't let a business day pass between "yes, pull my credit" and the portal invite.</p></div></div>
-            <div class="step-row"><div class="snum">4</div><div class="sc"><h4>Proactively offer the no-cash-due structure</h4><p>Roll escrows, skip the next payment. Remove the biggest friction point before they bring it up.</p></div></div>
-            <div class="step-row"><div class="snum">5</div><div class="sc"><h4>Match any competitor quote immediately</h4><p>Never let a competitor offer sit overnight. Match the rate, then use breakeven math to reframe why your structure wins. See Option Builder.</p></div></div>
-            <div class="step-row"><div class="snum">6</div><div class="sc"><h4>Deliver the side-by-side table within the hour</h4><p>When a client asks to see both options, the comparison is what closes them. Use Option Builder → copy the table into your reply.</p></div></div>
-            <div class="step-row"><div class="snum">7</div><div class="sc"><h4>One ask per email — always end with a single next step</h4><p>Multiple asks = no action. Sign disclosures. Confirm income. Pick a rate. One thing per message.</p></div></div>
-            <div class="step-row"><div class="snum">8</div><div class="sc"><h4>Lock with a 15-day window, framed as protecting gains</h4><p>"We've already seen significant improvement and locking protects that." Urgency without pressure.</p></div></div>
+          <div class="card-head">
+            <span class="card-title">Lead to lock</span>
+            <button class="cl-reset" onclick="resetCL('cl-process')">Reset</button>
+          </div>
+          <div class="card-body" style="padding-top:4px;padding-bottom:4px" id="cl-process">
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Same-day response with full scenario</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Separate escrows from closing costs</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Issue disclosures the same hour credit is authorized</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Offer the no-cash-due structure</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Match any competitor quote immediately</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Deliver the side-by-side comparison</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">One ask per email — single next step</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Lock with a 15-day window</span></label>
           </div>
         </div>
 
         <div class="card" style="margin-bottom:0">
-          <div class="card-head"><span class="card-title">Pre-lock document checklist</span></div>
-          <div class="card-body" style="padding-top:6px;padding-bottom:6px">
-            <ul class="chk">
-              <li><span class="ck">✓</span>Credit authorization</li>
-              <li><span class="ck">✓</span>Income confirmed — W2s + paystubs (current year)</li>
-              <li><span class="ck">✓</span>Bank statements (60 days)</li>
-              <li><span class="ck">✓</span>Homeowners insurance declarations page</li>
-              <li><span class="ck">✓</span>Current mortgage statement / payoff amount</li>
-              <li><span class="ck">✓</span>Signed disclosure package</li>
-              <li><span class="ck">✓</span>Appraisal waiver confirmed or appraisal ordered</li>
-              <li><span class="ck">✓</span>Marital status and legal name confirmed</li>
-              <li><span class="ck">✓</span>HOA docs (if applicable)</li>
-              <li><span class="ck">✓</span>Loan submitted to underwriting</li>
-            </ul>
+          <div class="card-head">
+            <span class="card-title">Pre-lock documents</span>
+            <button class="cl-reset" onclick="resetCL('cl-docs')">Reset</button>
+          </div>
+          <div class="card-body" style="padding-top:4px;padding-bottom:4px" id="cl-docs">
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Credit authorization</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">W2s + paystubs (current year)</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Bank statements (60 days)</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Homeowners insurance dec page</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Current mortgage statement / payoff</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Signed disclosure package</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Appraisal waiver confirmed or appraisal ordered</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Marital status and legal name confirmed</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">HOA docs (if applicable)</span></label>
+            <label class="cl-item"><input type="checkbox"><span class="cl-box"></span><span class="cl-text">Loan submitted to underwriting</span></label>
           </div>
         </div>
 
@@ -2051,6 +2059,11 @@ function copyHEEmail(event) {
     btn.innerText = 'Copied!';
     setTimeout(() => { btn.innerText = 'Copy email'; }, 2000);
   });
+}
+
+// ── Checklist ──────────────────────────────────────────────────────────
+function resetCL(id) {
+  document.querySelectorAll('#' + id + ' input[type="checkbox"]').forEach(cb => { cb.checked = false; });
 }
 
 // ── Init ───────────────────────────────────────────────────────────────
