@@ -1954,7 +1954,7 @@ function chl() {
 
   // Fees
   const creditReportFee  = btype === 'joint' ? 174.30 : 87.15;
-  const lenderFees       = 495 + 100 + 6 + creditReportFee; // origination + processing + flood cert + credit report
+  const lenderFees       = 495 + 100 + 6 + creditReportFee; // loan fees
   const brokerFee        = loan * (bpc / 100);
   const appraisalRequired = loan >= 250000;
   const appraisalCost    = appraisalRequired ? 1500 : 0;
@@ -2018,7 +2018,7 @@ function chl() {
     'It\'s great to meet you. I am excited to be able to help you put your home equity to work!\n\n' +
     'Your home should be worth an estimated ' + fm(val) + ' and you currently owe ' + balStr + ' on your first mortgage. A ' +
     fm(loan) + ' fixed-rate home equity loan puts you right at ' + cltv.toFixed(1) + '% Combined Loan To Value (CLTV). ' +
-    'Based on that CLTV and your credit score of ' + fico + ', a ' + fm(loan) + ' loan is currently at ' + rateStr + '% — ' +
+    'Based on that CLTV and your credit score of ' + fico + ', a ' + fm(loan) + ' loan is currently at ' + rateStr + '% ' +
     'fixed for the full ' + term + '-year term.\n\n' +
     'Your monthly payment would be about ' + fd(monthly) + '/month. Unlike a HELOC, this is a fully amortizing payment, ' +
     'meaning you pay both principal and interest each month and the balance pays to zero at the end of ' + term + ' years. ' +
@@ -2028,7 +2028,7 @@ function chl() {
     (appraisalRequired
       ? ' and a full appraisal and title work required at this loan amount (approximately $1,500)'
       : '') +
-    '. All fees except the appraisal — if one is required — are deducted from the loan at closing, so there is nothing out of pocket at settlement. ' +
+    '. All fees except the appraisal, if one is required, are deducted from the loan at closing, so there is nothing out of pocket at settlement. ' +
     (appraisalRequired
       ? 'The appraisal fee is due at the time of application. '
       : 'We should not need to order a full appraisal, just an automated valuation report. ') +
