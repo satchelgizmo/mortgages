@@ -532,6 +532,14 @@ body {
 /* Cash received at closing row */
 .cash-row { margin-top: 2px; padding-top: 9px !important; border-top: 2px solid var(--c-border2) !important; border-bottom: none !important; }
 .cash-row .h-detail-val { color: var(--c-ok); font-weight: 700; }
+
+/* ── Cash-out compare section labels ────────────────────────────────── */
+.co-section {
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--c-text3);
+  padding: 10px 0 4px; border-bottom: 1px solid var(--c-border2);
+  margin-bottom: 8px; margin-top: 4px;
+}
 </style>
 </head>
 <body>
@@ -553,6 +561,7 @@ body {
     <button class="tab" onclick="showTab('compare',this)"><span class="tab-icon">⇄</span>Option builder</button>
     <button class="tab" onclick="showTab('email',this)"><span class="tab-icon">✉</span>Email generator</button>
     <button class="tab" onclick="showTab('he',this)"><span class="tab-icon">⬡</span>Home equity</button>
+    <button class="tab" onclick="showTab('cashout',this)"><span class="tab-icon">↕</span>Cash-out compare</button>
     <button class="tab" onclick="showTab('checklist',this)"><span class="tab-icon">☑</span>Lock checklist</button>
     <button class="tab" onclick="showTab('saved',this)"><span class="tab-icon">◈</span>Saved scenarios</button>
   </div>
@@ -803,6 +812,76 @@ body {
       </div>
     </div>
 
+    <!-- ── CASH-OUT COMPARE ──────────────────────────────────────────── -->
+    <div class="panel" id="panel-cashout">
+      <div class="heloc-layout">
+
+        <!-- Left: inputs -->
+        <div class="card" style="margin-bottom:0">
+          <div class="card-head"><span class="card-title">Scenario inputs</span></div>
+          <div class="card-body">
+
+            <!-- Shared -->
+            <div class="fg fg2">
+              <div class="f"><label>Home value ($)</label><input type="number" id="co-val" value="570000" oninput="cco()"></div>
+              <div class="f"><label>Current payoff ($)</label><input type="number" id="co-payoff" value="320000" oninput="cco()"></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Credit score (FICO)</label><input type="number" id="co-fico" value="710" oninput="cco()"></div>
+              <div class="f">
+                <label>Loan term</label>
+                <select id="co-term" oninput="cco()">
+                  <option value="30" selected>30 years</option>
+                  <option value="20">20 years</option>
+                  <option value="15">15 years</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Option A -->
+            <div class="co-section">Option A — 80% cash-out + 10% HELOC</div>
+            <div class="fg fg2">
+              <div class="f"><label>1st lien rate (%)</label><input type="number" id="co-rateA" value="6.875" step="0.125" oninput="cco()"></div>
+              <div class="f"><label>Closing costs ($)</label><input type="number" id="co-ccA" value="5000" oninput="cco()"></div>
+            </div>
+
+            <!-- Option B -->
+            <div class="co-section">Option B — 90% cash-out (single loan)</div>
+            <div class="fg fg2">
+              <div class="f"><label>Rate (%)</label><input type="number" id="co-rateB" value="7.375" step="0.125" oninput="cco()"></div>
+              <div class="f"><label>Closing costs ($)</label><input type="number" id="co-ccB" value="5000" oninput="cco()"></div>
+            </div>
+
+            <!-- Email -->
+            <div class="co-section">Email</div>
+            <div class="fg fg2">
+              <div class="f"><label>Prime rate (%)</label><input type="number" id="co-prime" value="6.75" step="0.25" oninput="cco()"></div>
+              <div class="f"><!-- spacer --></div>
+            </div>
+            <div class="fg fg2">
+              <div class="f"><label>Client name</label><input type="text" id="co-cname" value="Client" oninput="cco()"></div>
+              <div class="f"><label>Your name</label><input type="text" id="co-agent" value="Nick" oninput="cco()"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Right: results + email -->
+        <div>
+          <div id="co-metrics" class="metrics-grid" style="margin-bottom:12px"></div>
+          <div class="opt-grid opt2" id="co-cards" style="margin-bottom:14px"></div>
+          <div>
+            <div class="email-preview-head">
+              <span class="email-hint">Edit before sending</span>
+              <button class="btn btn-primary" onclick="copyCOEmail(event)">Copy email</button>
+            </div>
+            <div class="emailbox" id="co-emailout" contenteditable="true" style="min-height:360px"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
     <!-- ── CHECKLIST ──────────────────────────────────────────────────── -->
     <div class="panel" id="panel-checklist">
       <div class="checklist-layout">
@@ -911,6 +990,7 @@ function showTab(id, el) {
   document.getElementById('panel-' + id).classList.add('active');
   if (id === 'email') ge();
   if (id === 'he') calcHE();
+  if (id === 'cashout') cco();
   if (id === 'saved') renderScenarios();
 }
 
@@ -2061,6 +2141,158 @@ function copyHEEmail(event) {
   });
 }
 
+// ── Cash-out compare ───────────────────────────────────────────────────
+function cco() {
+  const val    = gv('co-val');
+  const payoff = gv('co-payoff');
+  const fico   = gv('co-fico');
+  const termYr = parseInt(document.getElementById('co-term').value, 10) || 30;
+  const term   = termYr * 12;
+  const prime  = gv('co-prime');
+  const rateA  = gv('co-rateA');
+  const ccA    = gv('co-ccA');
+  const rateB  = gv('co-rateB');
+  const ccB    = gv('co-ccB');
+  const cname  = document.getElementById('co-cname').value || 'Client';
+  const agent  = document.getElementById('co-agent').value || 'Nick';
+
+  const metricsEl = document.getElementById('co-metrics');
+  const cardsEl   = document.getElementById('co-cards');
+  const emailEl   = document.getElementById('co-emailout');
+
+  if (!val || val <= 0) {
+    metricsEl.innerHTML = '';
+    cardsEl.innerHTML   = '';
+    emailEl.innerText   = '';
+    return;
+  }
+
+  // ── Option A: 80% first lien + 10% HELOC (2nd lien, CLTV = 90%) ──
+  const loanA      = Math.round(val * 0.80);
+  const helocLine  = Math.round(val * 0.10);
+  const helocLookup = getHelocMargin(fico, 90, 2);
+  const helocAvail  = helocLookup !== null;
+  const helocMargin = helocAvail ? helocLookup.margin : 0;
+  const helocRate   = helocAvail ? Math.max(prime + helocMargin, 4.95) : 0;
+  const helocIO     = helocAvail ? helocLine * (helocRate / 100) / 12 : 0;
+  const piA         = rateA > 0 ? pmt(rateA, term, loanA) : 0;
+  const combinedA   = piA + helocIO;
+  const cashA       = loanA - payoff - ccA;
+
+  // ── Option B: 90% single cash-out ────────────────────────────────
+  const loanB  = Math.round(val * 0.90);
+  const piB    = rateB > 0 ? pmt(rateB, term, loanB) : 0;
+  const cashB  = loanB - payoff - ccB;
+
+  const pmtDiff      = combinedA - piB;
+  const helocRateStr = helocRate.toFixed(3).replace(/\.?0+$/, '');
+  const marginStr    = helocMargin.toFixed(3).replace(/\.?0+$/, '');
+
+  // ── Metrics ───────────────────────────────────────────────────────
+  metricsEl.innerHTML =
+    mcard('Option A combined', fd(combinedA), fd(piA) + ' P&I + ' + fd(helocIO) + ' HELOC', '') +
+    mcard('Option B payment',  fd(piB),       termYr + '-yr @ ' + rateB + '%', '') +
+    mcard('Monthly delta',
+      (pmtDiff > 0.005 ? '+' : '') + fd(pmtDiff),
+      pmtDiff <= 0.005 ? 'A saves/mo vs. B' : 'B saves/mo vs. A',
+      pmtDiff <= 0.005 ? 'ok' : '') +
+    mcard('HELOC rate', helocAvail ? helocRateStr + '%' : 'N/A',
+      helocAvail ? 'Prime ' + prime + '% + ' + marginStr + '%' : 'FICO/CLTV not available', '');
+
+  // ── Comparison cards ──────────────────────────────────────────────
+  const row = (lbl, val) =>
+    '<div class="h-detail-row"><span class="h-detail-lbl">' + lbl + '</span>' +
+    '<span class="h-detail-val">' + val + '</span></div>';
+
+  const boldRow = (lbl, val, color) =>
+    '<div class="h-detail-row" style="border-top:2px solid var(--c-border2);margin-top:4px;padding-top:8px">' +
+    '<span class="h-detail-lbl" style="font-weight:700">' + lbl + '</span>' +
+    '<span class="h-detail-val" style="color:' + color + '">' + val + '</span></div>';
+
+  const cashFmt = n => n >= 0 ? fm(n) + ' received' : fm(-n) + ' due';
+
+  const cardA =
+    '<div class="ocard"><div class="ocard-head"><span class="otitle">Option A — 80% + 10% HELOC</span></div>' +
+    '<div style="padding:12px 14px">' +
+    row('1st mortgage (' + termYr + '-yr fixed)', fm(loanA) + ' @ ' + rateA + '%') +
+    row('Monthly P&I', fd(piA) + '/mo') +
+    row('HELOC line (10%)', fm(helocLine) + (helocAvail ? ' @ ' + helocRateStr + '%' : ' — rate N/A')) +
+    (helocAvail ? row('Prime ' + prime + '% + ' + marginStr + '% margin', fd(helocIO) + '/mo interest only') : '') +
+    boldRow('Combined monthly', fd(combinedA) + '/mo', 'var(--c-accent)') +
+    row('Closing costs', fm(ccA)) +
+    '<div class="h-detail-row cash-row"><span class="h-detail-lbl">Cash at closing</span>' +
+    '<span class="h-detail-val">' + cashFmt(cashA) + '</span></div>' +
+    '</div></div>';
+
+  const cardB =
+    '<div class="ocard"><div class="ocard-head"><span class="otitle">Option B — 90% Cash-Out</span></div>' +
+    '<div style="padding:12px 14px">' +
+    row('Loan amount (' + termYr + '-yr fixed)', fm(loanB) + ' @ ' + rateB + '%') +
+    row('LTV at close', '90.0%') +
+    row('PMI', 'Confirm with lender') +
+    boldRow('Monthly payment', fd(piB) + '/mo', 'var(--c-accent)') +
+    row('Closing costs', fm(ccB)) +
+    '<div class="h-detail-row cash-row"><span class="h-detail-lbl">Cash at closing</span>' +
+    '<span class="h-detail-val">' + cashFmt(cashB) + '</span></div>' +
+    '</div></div>';
+
+  cardsEl.innerHTML = cardA + cardB;
+
+  // ── Email ─────────────────────────────────────────────────────────
+  const tod = new Date().getHours() < 12 ? 'morning' : 'afternoon';
+  const cashALabel = cashA >= 0 ? fm(cashA) + ' back at closing' : fm(-cashA) + ' due at closing';
+  const cashBLabel = cashB >= 0 ? fm(cashB) + ' back at closing' : fm(-cashB) + ' due at closing';
+
+  let deltaLine = '';
+  if (Math.abs(pmtDiff) < 1) {
+    deltaLine = 'The combined monthly payment on Option A is essentially the same as Option B.';
+  } else if (pmtDiff > 0) {
+    deltaLine = 'The combined monthly payment on Option A is ' + fd(pmtDiff) + '/month more than Option B.';
+  } else {
+    deltaLine = 'The combined monthly payment on Option A is actually ' + fd(-pmtDiff) + '/month less than Option B.';
+  }
+
+  const helocBlock = helocAvail
+    ? 'HELOC line (10%): ' + fm(helocLine) + ' at ' + helocRateStr + '% variable (Prime ' + prime + '% + ' + marginStr + '% margin, 2nd lien)\n' +
+      'HELOC payment (interest only on full draw): ' + fd(helocIO) + '/month\n'
+    : 'HELOC line (10%): ' + fm(helocLine) + ' (rate not available at this FICO for 90% CLTV on 2nd lien)\n';
+
+  const email =
+    'Good ' + tod + ', ' + cname + ',\n\n' +
+    'Here are the details on both structures based on a ' + fm(val) + ' home value and ' + fm(payoff) + ' payoff.\n\n' +
+    'Option A: 80% Cash-Out Refinance + 10% HELOC (Piggyback)\n\n' +
+    'First mortgage: ' + fm(loanA) + ' at ' + rateA + '% (' + termYr + '-year fixed)\n' +
+    'Monthly P&I: ' + fd(piA) + '/month\n' +
+    helocBlock +
+    'Combined monthly: ' + fd(combinedA) + '/month\n' +
+    'Closing costs: ' + fm(ccA) + '\n' +
+    'Cash at closing: ' + cashALabel + '\n\n' +
+    'Option B: 90% Cash-Out Refinance\n\n' +
+    'Loan amount: ' + fm(loanB) + ' at ' + rateB + '% (' + termYr + '-year fixed)\n' +
+    'Monthly P&I: ' + fd(piB) + '/month\n' +
+    'Closing costs: ' + fm(ccB) + '\n' +
+    'Cash at closing: ' + cashBLabel + '\n\n' +
+    deltaLine + ' ' +
+    'The advantage of Option A is that the first mortgage stays at 80% LTV, keeping you clear of PMI, ' +
+    'and the HELOC gives you flexibility to draw what you need and pay interest only on that balance ' +
+    '(you can pay it down or leave it open as you see fit). ' +
+    'Option B consolidates everything into one fixed payment, but the 90% LTV bucket typically prices higher ' +
+    'and PMI may apply depending on the loan program.\n\n' +
+    'Let me know how you would like to proceed.\n\n' +
+    agent;
+
+  emailEl.innerText = email;
+}
+
+function copyCOEmail(event) {
+  const box = document.getElementById('co-emailout');
+  const btn = event.target;
+  navigator.clipboard.writeText(box.innerText).then(() => {
+    btn.innerText = 'Copied!';
+    setTimeout(() => { btn.innerText = 'Copy email'; }, 2000);
+  });
+}
+
 // ── Checklist ──────────────────────────────────────────────────────────
 function resetCL(id) {
   document.querySelectorAll('#' + id + ' input[type="checkbox"]').forEach(cb => { cb.checked = false; });
@@ -2072,6 +2304,7 @@ buildOptInputs();
 _doBuildComparison();  // call directly on init (no debounce needed)
 renderScenarios();
 calcHE();
+cco();
 </script>
 </body>
 </html>
